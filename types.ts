@@ -1,3 +1,5 @@
+
+
 export enum Frequency {
   DAILY = 'DAILY',
   WEEKLY = 'WEEKLY',
@@ -30,13 +32,49 @@ export enum TransactionType {
   PAYOUT_REVERSAL = 'PAYOUT_REVERSAL', // For corrections
 }
 
-export interface UserProfile {
+// Backend: 'users' collection
+export interface UserData {
   id: string;
   name: string;
+  email: string;
+  photoUrl?: string;
   language: 'pt' | 'en';
-  email?: string;
-  phone?: string;
+  lastLogin: string; // ISO timestamp
+  fcmToken?: string; // For notifications
+}
+
+// Backend: 'preferences' collection
+export interface UserPreferences {
+  userId: string;
+  contributions: boolean; // Simple boolean or could be Frequency
+  payouts: boolean;
+  updates: boolean;
+}
+
+// Backend: 'activity_logs' collection
+export interface ActivityLog {
+  id?: string;
+  userId: string;
+  action: 'LOGIN' | 'REGISTER' | 'UPDATE_PROFILE' | 'UPDATE_PREFS' | 'CHANGE_PASSWORD' | 'ERROR';
+  details?: string;
+  timestamp: string;
+  status: 'SUCCESS' | 'FAILURE';
+}
+
+// Frontend: Combined Profile for UI convenience
+export interface UserProfile extends UserData {
   avatarColor?: string;
+  joinedAt?: number;
+  notificationPreferences: {
+    contributions: boolean;
+    payouts: boolean;
+    updates: boolean;
+  };
+}
+
+export interface AuthSession {
+  user: UserProfile;
+  token: string;
 }
 
 export interface Transaction {

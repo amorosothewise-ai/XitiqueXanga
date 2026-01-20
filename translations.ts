@@ -1,3 +1,4 @@
+
 export const translations = {
   pt: {
     // Layout
@@ -113,12 +114,29 @@ export const translations = {
     "wiz.alert_members": "Precisa de pelo menos 2 pessoas.",
 
     // User Profile
-    "profile.title": "Configurações do Perfil",
-    "profile.subtitle": "Gerencie suas informações pessoais",
-    "profile.label_name": "Seu Nome",
-    "profile.label_lang": "Idioma Preferido",
+    "profile.title": "Perfil e Definições",
+    "profile.subtitle": "Gerencie suas preferências pessoais e segurança",
+    "profile.personal_info": "Informação Pessoal",
+    "profile.label_name": "Nome Completo",
+    "profile.label_email": "Email (Opcional)",
+    "profile.label_phone": "Telefone (Opcional)",
+    "profile.label_lang": "Idioma do Aplicativo",
+    "profile.label_avatar": "Cor do Avatar",
+    "profile.notifications": "Notificações e Alertas",
+    "profile.notif_contrib": "Lembretes de Contribuição",
+    "profile.notif_payout": "Alertas de Pagamento (Recebimento)",
+    "profile.notif_updates": "Atualizações do Sistema",
+    "profile.security": "Segurança e Acesso",
+    "profile.last_login": "Último acesso em",
+    "profile.change_pass": "Alterar Senha",
+    "profile.pass_modal_title": "Alterar Senha de Acesso",
+    "profile.pass_modal_desc": "Por segurança, insira sua senha atual e a nova senha desejada.",
     "profile.save": "Salvar Alterações",
     "profile.saved": "Perfil atualizado com sucesso!",
+    "profile.pass_updated": "Senha atualizada com sucesso (Simulação)",
+    "profile.member_since": "Membro desde",
+    "profile.on": "Ligado",
+    "profile.off": "Desligado",
 
     // Detail
     "detail.back": "Voltar",
@@ -340,12 +358,29 @@ export const translations = {
     "wiz.alert_members": "Need at least 2 people.",
 
     // User Profile
-    "profile.title": "Profile Settings",
-    "profile.subtitle": "Manage your personal information",
-    "profile.label_name": "Your Name",
-    "profile.label_lang": "Preferred Language",
+    "profile.title": "Profile & Settings",
+    "profile.subtitle": "Manage your personal information and security",
+    "profile.personal_info": "Personal Information",
+    "profile.label_name": "Full Name",
+    "profile.label_email": "Email Address (Optional)",
+    "profile.label_phone": "Phone Number (Optional)",
+    "profile.label_lang": "App Language",
+    "profile.label_avatar": "Avatar Color",
+    "profile.notifications": "Notifications & Alerts",
+    "profile.notif_contrib": "Contribution Reminders",
+    "profile.notif_payout": "Payout Alerts (Receiving)",
+    "profile.notif_updates": "System Updates",
+    "profile.security": "Security & Access",
+    "profile.last_login": "Last access on",
+    "profile.change_pass": "Change Password",
+    "profile.pass_modal_title": "Change Access Password",
+    "profile.pass_modal_desc": "For security, please enter your current password and the new desired password.",
     "profile.save": "Save Changes",
     "profile.saved": "Profile updated successfully!",
+    "profile.pass_updated": "Password updated successfully (Simulation)",
+    "profile.member_since": "Member since",
+    "profile.on": "On",
+    "profile.off": "Off",
 
     // Detail
     "detail.back": "Back",

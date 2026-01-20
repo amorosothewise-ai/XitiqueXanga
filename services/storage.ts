@@ -1,3 +1,5 @@
+
+
 import { Xitique, XitiqueStatus, XitiqueType, UserProfile } from '../types';
 
 const STORAGE_KEY = 'xitique_app_data_v1';
@@ -70,16 +72,36 @@ export const createNewXitique = (partial: Partial<Xitique>): Xitique => {
 
 export const getUserProfile = (): UserProfile => {
   const data = localStorage.getItem(USER_KEY);
-  if (data) return JSON.parse(data);
+  if (data) {
+    const parsed = JSON.parse(data);
+    // Backward compatibility: ensure preferences object exists
+    if (!parsed.notificationPreferences) {
+      parsed.notificationPreferences = {
+        contributions: true,
+        payouts: true,
+        updates: false
+      };
+    }
+    return parsed;
+  }
 
   return {
     id: 'guest',
     name: 'Usuário Convidado',
+    email: '', // Guest email placeholder
     language: 'pt',
-    avatarColor: 'bg-emerald-500'
+    avatarColor: 'bg-emerald-500',
+    joinedAt: Date.now(),
+    lastLogin: new Date().toISOString(),
+    notificationPreferences: {
+      contributions: true,
+      payouts: true,
+      updates: false
+    }
   };
 };
 
 export const saveUserProfile = (profile: UserProfile): void => {
+  // Update last login implicitly on save if needed, or just save state
   localStorage.setItem(USER_KEY, JSON.stringify(profile));
 };
