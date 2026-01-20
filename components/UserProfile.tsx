@@ -1,12 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
-import { User, Save, Globe, Mail, Phone, Bell, Shield, Key, Clock, Palette, LogOut, Loader2, Camera, FileText } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, Save, Globe, Mail, Phone, Bell, Shield, Key, Clock, Palette, LogOut, Loader2, Camera, FileText, Image as ImageIcon } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import { updateUserProfileData, updateUserPreferences, getActivityLogs } from '../services/userService';
+import { uploadAvatar } from '../services/fileService';
 import { UserProfile as UserProfileType, ActivityLog } from '../types';
 import ConfirmationModal from './ConfirmationModal';
+import ImageCropper from './ImageCropper';
 
 const UserProfile: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
@@ -25,6 +27,11 @@ const UserProfile: React.FC = () => {
   // Password Change State
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
+
+  // Avatar Upload State
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -117,28 +124,98 @@ const UserProfile: React.FC = () => {
     }) : null);
   };
 
-  const colors = [
-    'bg-emerald-500', 'bg-teal-500', 'bg-blue-500', 'bg-indigo-500', 
-    'bg-purple-500', 'bg-rose-500', 'bg-orange-500', 'bg-slate-500'
-  ];
+  // --- Avatar Logic ---
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files.length > 0) {
+          const file = e.target.files[0];
+          
+          // Basic validation
+          if (file.size > 5 * 1024 * 1024) { // 5MB
+              addToast("Image is too large (max 5MB)", 'error');
+              return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = () => {
+              setSelectedImageSrc(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+      }
+      // Reset input so same file can be selected again if needed
+      if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleCropComplete = async (blob: Blob) => {
+      if (!profile) return;
+      
+      setSelectedImageSrc(null); // Close modal
+      setIsUploading(true);
+      
+      try {
+          // 1. Upload to Supabase
+          const publicUrl = await uploadAvatar(profile.id, blob);
+          
+          // 2. Update local state
+          setProfile(prev => prev ? ({ ...prev, photoUrl: publicUrl }) : null);
+          
+          // 3. Persist to DB immediately
+          await updateUserProfileData(profile.id, { photoUrl: publicUrl });
+          
+          addToast('Avatar updated successfully', 'success');
+      } catch (error: any) {
+          console.error(error);
+          addToast(error.message || 'Failed to upload image', 'error');
+      } finally {
+          setIsUploading(false);
+      }
+  };
 
   if (!profile) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto text-emerald-500" /></div>;
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-12">
+        {/* Cropper Modal */}
+        {selectedImageSrc && (
+            <ImageCropper 
+                imageSrc={selectedImageSrc} 
+                onCancel={() => setSelectedImageSrc(null)}
+                onCrop={handleCropComplete}
+            />
+        )}
+        
+        {/* Hidden File Input */}
+        <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileSelect} 
+            accept="image/png, image/jpeg, image/jpg" 
+            className="hidden" 
+        />
+
         {/* Header Section */}
         <div className="flex flex-col md:flex-row items-center gap-6 bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
             <div className="relative group">
-                <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-bold overflow-hidden ${!profile.photoUrl ? 'bg-emerald-500' : ''} shadow-lg`}>
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-bold overflow-hidden ${!profile.photoUrl ? 'bg-emerald-500' : ''} shadow-lg relative`}>
+                    {isUploading ? (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <Loader2 className="animate-spin text-white" />
+                        </div>
+                    ) : null}
+                    
                     {profile.photoUrl ? (
                         <img src={profile.photoUrl} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
                         profile.name.charAt(0).toUpperCase() || 'U'
                     )}
                 </div>
-                <div className="absolute -bottom-2 -right-2 bg-white p-2 rounded-full shadow border border-slate-100 cursor-pointer hover:bg-slate-50">
-                    <Camera size={16} className="text-slate-500" />
-                </div>
+                <button 
+                    onClick={() => !isUploading && fileInputRef.current?.click()}
+                    className="absolute -bottom-2 -right-2 bg-white p-2 rounded-full shadow border border-slate-100 cursor-pointer hover:bg-slate-50 text-slate-500 hover:text-emerald-600 transition-colors"
+                    title="Change Photo"
+                >
+                    <Camera size={16} />
+                </button>
             </div>
             
             <div className="text-center md:text-left flex-1">

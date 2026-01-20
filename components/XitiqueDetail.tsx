@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Xitique, Participant, TransactionType, XitiqueStatus } from '../types';
 import { formatDate, addPeriod } from '../services/dateUtils';
@@ -706,7 +705,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
         <div className="relative z-10">
             <div className="flex items-center gap-3 mb-2">
                 <span className="bg-white/10 backdrop-blur text-slate-300 border border-white/10 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">
-                    {xitique.frequency === 'WEEKLY' ? t('wiz.weekly') : t('wiz.monthly')}
+                    {xitique.frequency === 'WEEKLY' ? t('wiz.weekly') : xitique.frequency === 'MONTHLY' ? t('wiz.monthly') : t('wiz.daily')}
                 </span>
                 
                 <span className={`${currentBadge.color} ${currentBadge.textColor} text-xs font-bold px-2 py-1 rounded uppercase tracking-wider flex items-center gap-1.5 shadow-sm`}>
@@ -993,54 +992,57 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                   <div className="flex-1 min-w-[200px]">
                     {isEditing ? (
                         <div className="flex flex-col gap-3 w-full">
-                             {/* Top Row: Order & Name */}
-                             <div className="flex gap-2 items-center">
-                                <div className="relative w-16 flex-shrink-0">
-                                   <Hash size={12} className="absolute left-2 top-3 text-slate-400 pointer-events-none"/>
-                                   <input 
-                                     type="number" 
-                                     value={editForm.order} 
-                                     onChange={(e) => setEditForm({...editForm, order: Number(e.target.value)})}
-                                     className="w-full pl-6 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-bold text-center"
-                                     title="Order Position"
-                                   />
-                                </div>
-                                <input 
-                                  type="text" 
-                                  value={editForm.name} 
-                                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                                  className="flex-1 font-bold text-slate-900 border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
-                                  placeholder="Name"
-                                  autoFocus
-                                />
-                             </div>
-
-                             {/* Bottom Row: Date & Amount */}
-                             <div className="flex gap-2 items-end">
-                                <div className="relative flex-1">
-                                    <div className="text-[10px] uppercase font-bold text-slate-400 mb-1 ml-1">Payout Date</div>
-                                    <Calendar size={14} className="absolute left-2.5 top-8 text-slate-400 pointer-events-none"/>
-                                    <input 
-                                        type="date" 
-                                        value={editForm.date} 
-                                        onChange={(e) => setEditForm({...editForm, date: e.target.value})}
-                                        className="w-full pl-8 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm"
-                                    />
-                                </div>
-                                
-                                {/* Custom Contribution Input - Highlighted */}
-                                <div className="relative w-36 flex-shrink-0">
-                                    <div className="text-[10px] uppercase font-bold text-indigo-600 mb-1 ml-1 flex items-center gap-1">
-                                        <Coins size={10} /> Contribution
+                             <div className="flex flex-col md:flex-row gap-2 md:items-center">
+                                 {/* Order & Name Group */}
+                                 <div className="flex gap-2 items-center flex-1">
+                                    <div className="relative w-16 flex-shrink-0">
+                                       <Hash size={12} className="absolute left-2 top-3 text-slate-400 pointer-events-none"/>
+                                       <input 
+                                         type="number" 
+                                         value={editForm.order} 
+                                         onChange={(e) => setEditForm({...editForm, order: Number(e.target.value)})}
+                                         className="w-full pl-6 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-bold text-center"
+                                         title="Order Position"
+                                       />
                                     </div>
-                                    <span className="absolute left-3 top-8 text-indigo-400 text-xs font-bold pointer-events-none">$</span>
                                     <input 
-                                        type="number"
-                                        value={editForm.amount}
-                                        onChange={(e) => setEditForm({...editForm, amount: Number(e.target.value)})}
-                                        className="w-full pl-6 p-2 border-2 border-indigo-200 bg-indigo-50/50 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm font-bold text-indigo-900"
+                                      type="text" 
+                                      value={editForm.name} 
+                                      onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                                      className="flex-1 font-bold text-slate-900 border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none bg-white min-w-[120px]"
+                                      placeholder="Name"
+                                      autoFocus
                                     />
-                                </div>
+                                 </div>
+
+                                 {/* Amount & Date Group */}
+                                 <div className="flex gap-2 items-center">
+                                    {/* Custom Contribution Input - Highlighted */}
+                                    <div className="relative w-32 md:w-36 flex-shrink-0">
+                                        <div className="md:hidden text-[10px] uppercase font-bold text-indigo-600 mb-1 ml-1 flex items-center gap-1">
+                                            <Coins size={10} /> Contribution
+                                        </div>
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 md:top-2.5 md:translate-y-0 text-indigo-400 text-xs font-bold pointer-events-none">$</span>
+                                        <input 
+                                            type="number"
+                                            value={editForm.amount}
+                                            onChange={(e) => setEditForm({...editForm, amount: Number(e.target.value)})}
+                                            className="w-full pl-6 p-2 border-2 border-indigo-200 bg-indigo-50/50 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm font-bold text-indigo-900"
+                                            title="Contribuição Individual"
+                                            placeholder="Valor"
+                                        />
+                                    </div>
+
+                                    <div className="relative flex-1 md:w-40">
+                                        <Calendar size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
+                                        <input 
+                                            type="date" 
+                                            value={editForm.date} 
+                                            onChange={(e) => setEditForm({...editForm, date: e.target.value})}
+                                            className="w-full pl-8 p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm"
+                                        />
+                                    </div>
+                                 </div>
                              </div>
                         </div>
                     ) : (
@@ -1079,7 +1081,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
 
                 <div className="flex items-center justify-end gap-2 mt-4 md:mt-0 pl-12 md:pl-0">
                    {isEditing ? (
-                       <div className="flex flex-col gap-2 h-full justify-center pt-6">
+                       <div className="flex flex-col gap-2 h-full justify-center pt-6 md:pt-0">
                         <button onClick={saveParticipantChanges} className="bg-emerald-500 hover:bg-emerald-600 text-white p-2.5 rounded-lg shadow-sm transition-transform hover:scale-105"><Save size={18} /></button>
                         <button onClick={() => setEditForm(null)} className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 p-2.5 rounded-lg transition-transform hover:scale-105"><X size={18} /></button>
                        </div>
