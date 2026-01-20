@@ -44,6 +44,11 @@ export const translations = {
     "dash.started": "Iniciado em",
     "dash.daily_badge": "DIÁRIO",
     "dash.completed_badge": "CONCLUÍDO",
+    "dash.tab_active": "Ativos",
+    "dash.tab_history": "Histórico / Arquivo",
+    "dash.no_archived": "Nenhum grupo no histórico.",
+    "dash.page": "Página",
+    "dash.of": "de",
 
     // Individual / Stick
     "ind.title": "Xitique Pessoal",
@@ -95,7 +100,7 @@ export const translations = {
     "wiz.step4": "Sistema Pronto",
     "wiz.label_name": "Nome do Grupo",
     "wiz.placeholder_name": "Ex: Fundo de Férias",
-    "wiz.label_amount": "Contribuição",
+    "wiz.label_amount": "Contribuição Base",
     "wiz.label_freq": "Frequência",
     "wiz.label_method": "Método de Pagamento",
     "wiz.weekly": "Semanal",
@@ -111,7 +116,7 @@ export const translations = {
     "wiz.unlock": "Destravar posição",
     "wiz.system_ready": "Sistema Pronto",
     "wiz.ready_desc": "Seu Xitique está configurado.",
-    "wiz.total_pot": "Pote Total:",
+    "wiz.total_pot": "Pote Médio Estimado:",
     "wiz.summary": "Resumo da Configuração",
     "wiz.first_payout": "Primeiro Recebimento",
     "wiz.last_payout": "Último Recebimento",
@@ -124,6 +129,15 @@ export const translations = {
     "wiz.btn_launch_renew": "Lançar Novo Ciclo",
     "wiz.alert_name": "Por favor insira um nome",
     "wiz.alert_members": "Precisa de pelo menos 2 pessoas.",
+    
+    // Contribution Modes
+    "wiz.mode_title": "Tipo de Contribuição",
+    "wiz.mode_uniform": "Uniforme",
+    "wiz.mode_uniform_desc": "Todos contribuem o mesmo valor.",
+    "wiz.mode_variable": "Variável",
+    "wiz.mode_variable_desc": "Membros podem ter valores diferentes.",
+    "wiz.col_name": "Nome",
+    "wiz.col_amount": "Valor (MT)",
 
     // User Profile
     "profile.title": "Perfil e Definições",
@@ -139,6 +153,7 @@ export const translations = {
     "profile.notif_payout": "Alertas de Pagamento (Recebimento)",
     "profile.notif_updates": "Atualizações do Sistema",
     "profile.security": "Segurança e Acesso",
+    "profile.audit_log": "Log de Atividades",
     "profile.last_login": "Último acesso em",
     "profile.change_pass": "Alterar Senha",
     "profile.pass_modal_title": "Alterar Senha de Acesso",
@@ -180,6 +195,7 @@ export const translations = {
     "detail.share_success": "Lista copiada para o clipboard!",
     "detail.share_fail": "Falha ao copiar.",
     "detail.export": "Exportar CSV",
+    "detail.export_pdf": "Exportar PDF",
     "detail.export_success": "Relatório baixado.",
     
     // New Recalculation features
@@ -304,6 +320,11 @@ export const translations = {
     "dash.started": "Started",
     "dash.daily_badge": "DAILY",
     "dash.completed_badge": "COMPLETED",
+    "dash.tab_active": "Active",
+    "dash.tab_history": "History / Archive",
+    "dash.no_archived": "No groups in history.",
+    "dash.page": "Page",
+    "dash.of": "of",
 
     // Individual / Stick
     "ind.title": "Personal Xitique",
@@ -355,7 +376,7 @@ export const translations = {
     "wiz.step4": "System Ready",
     "wiz.label_name": "Group Name",
     "wiz.placeholder_name": "e.g., Family Vacation Fund",
-    "wiz.label_amount": "Contribution",
+    "wiz.label_amount": "Base Contribution",
     "wiz.label_freq": "Frequency",
     "wiz.label_method": "Payment Method",
     "wiz.weekly": "Weekly",
@@ -371,7 +392,7 @@ export const translations = {
     "wiz.unlock": "Unlock position",
     "wiz.system_ready": "System Ready",
     "wiz.ready_desc": "Your Xitique is configured.",
-    "wiz.total_pot": "Total Pot:",
+    "wiz.total_pot": "Estimated Avg Pot:",
     "wiz.summary": "Configuration Summary",
     "wiz.first_payout": "First Payout",
     "wiz.last_payout": "Last Payout",
@@ -384,13 +405,22 @@ export const translations = {
     "wiz.btn_launch_renew": "Launch New Cycle",
     "wiz.alert_name": "Please enter a name",
     "wiz.alert_members": "Need at least 2 people.",
+    
+    // Contribution Modes
+    "wiz.mode_title": "Contribution Type",
+    "wiz.mode_uniform": "Uniform",
+    "wiz.mode_uniform_desc": "Everyone pays the same amount.",
+    "wiz.mode_variable": "Variable",
+    "wiz.mode_variable_desc": "Members can have different amounts.",
+    "wiz.col_name": "Name",
+    "wiz.col_amount": "Amount (MT)",
 
     // User Profile
     "profile.title": "Profile & Settings",
     "profile.subtitle": "Manage your personal information and security",
     "profile.personal_info": "Personal Information",
     "profile.label_name": "Full Name",
-    "profile.label_email": "Email Address (Optional)",
+    "profile.label_email": "Email (Optional)",
     "profile.label_phone": "Phone Number (Optional)",
     "profile.label_lang": "App Language",
     "profile.label_avatar": "Avatar Color",
@@ -399,6 +429,7 @@ export const translations = {
     "profile.notif_payout": "Payout Alerts (Receiving)",
     "profile.notif_updates": "System Updates",
     "profile.security": "Security & Access",
+    "profile.audit_log": "Activity Log",
     "profile.last_login": "Last access on",
     "profile.change_pass": "Change Password",
     "profile.pass_modal_title": "Change Access Password",
@@ -440,6 +471,7 @@ export const translations = {
     "detail.share_success": "List copied to clipboard!",
     "detail.share_fail": "Failed to copy.",
     "detail.export": "Export CSV",
+    "detail.export_pdf": "Export PDF",
     "detail.export_success": "Report downloaded.",
 
     // New Recalculation features
@@ -500,7 +532,7 @@ export const translations = {
     "tip.group_2": "Receiving last forces you to save. It's like the group hides the money from you until the end!",
     "tip.ind_1": "Small frequent deposits beat rare huge deposits. Consistency is key.",
     "tip.ind_2": "Visualize what you will buy with this money. It makes today's sacrifice easier.",
-    "tip.with_1": "Careful! Withdrawing now resets your psychological 'compound interest'. Are you sure?",
+    "tip.with_1": "Cuidado! Levantar agora reseta seu 'juro composto' psicológico. Tem certeza?",
     "tip.with_2": "If it's not an emergency, try waiting 48 hours before withdrawing.",
 
     // Modals & Safety

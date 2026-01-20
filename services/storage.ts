@@ -19,6 +19,7 @@ export const getXitiques = async (): Promise<Xitique[]> => {
   if (!user.user) return [];
 
   // Fetch Xitiques with their related data
+  // Removed .neq('status', 'ARCHIVED') to allow the history tab to show archived items.
   const { data, error } = await supabase
     .from('xitiques')
     .select(`
@@ -26,7 +27,6 @@ export const getXitiques = async (): Promise<Xitique[]> => {
       participants (*),
       transactions (*)
     `)
-    .neq('status', 'ARCHIVED')
     .order('created_at', { ascending: false });
 
   if (error) {

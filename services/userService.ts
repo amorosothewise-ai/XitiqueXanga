@@ -2,8 +2,7 @@
 import { UserData, UserPreferences, UserProfile, ActivityLog } from '../types';
 import { supabase } from './supabase';
 
-// Real Supabase Implementation using User Metadata
-// This avoids needing a separate 'profiles' table for simple data
+const ACTIVITY_LOG_KEY = 'xitique_activity_logs_v1';
 
 export const logActivity = async (
   userId: string, 
@@ -11,9 +10,25 @@ export const logActivity = async (
   status: 'SUCCESS' | 'FAILURE' = 'SUCCESS',
   details?: string
 ): Promise<void> => {
-  // Optional: You could create a 'logs' table in Supabase
-  // await supabase.from('activity_logs').insert({ user_id: userId, action, status, details });
+  const newLog: ActivityLog = {
+      id: crypto.randomUUID(),
+      userId,
+      action,
+      status,
+      details,
+      timestamp: new Date().toISOString()
+  };
+
+  const existing = getActivityLogs();
+  const updated = [newLog, ...existing].slice(0, 50); // Keep last 50
+  localStorage.setItem(ACTIVITY_LOG_KEY, JSON.stringify(updated));
+  
   console.log(`[Activity] ${action} - ${status}`);
+};
+
+export const getActivityLogs = (): ActivityLog[] => {
+    const data = localStorage.getItem(ACTIVITY_LOG_KEY);
+    return data ? JSON.parse(data) : [];
 };
 
 export const updateUserProfileData = async (userId: string, data: Partial<UserData>): Promise<void> => {
@@ -27,7 +42,11 @@ export const updateUserProfileData = async (userId: string, data: Partial<UserDa
     data: updates
   });
 
-  if (error) throw error;
+  if (error) {
+      logActivity(userId, 'UPDATE_PROFILE', 'FAILURE', error.message);
+      throw error;
+  }
+  logActivity(userId, 'UPDATE_PROFILE', 'SUCCESS');
 };
 
 export const updateUserPreferences = async (userId: string, prefs: Partial<UserPreferences>): Promise<void> => {
@@ -42,6 +61,10 @@ export const updateUserPreferences = async (userId: string, prefs: Partial<UserP
       data: { preferences: newPrefs }
     });
     
-    if (error) throw error;
+    if (error) {
+        logActivity(userId, 'UPDATE_PREFS', 'FAILURE', error.message);
+        throw error;
+    }
+    logActivity(userId, 'UPDATE_PREFS', 'SUCCESS');
   }
 };

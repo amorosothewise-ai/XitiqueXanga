@@ -1,9 +1,13 @@
 
-
 export enum Frequency {
   DAILY = 'DAILY',
   WEEKLY = 'WEEKLY',
   MONTHLY = 'MONTHLY',
+}
+
+export enum ContributionMode {
+  UNIFORM = 'UNIFORM',
+  VARIABLE = 'VARIABLE',
 }
 
 export enum XitiqueStatus {

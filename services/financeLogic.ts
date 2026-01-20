@@ -1,3 +1,4 @@
+
 import { Transaction, TransactionType, Xitique, Participant } from '../types';
 
 /**
@@ -28,12 +29,31 @@ export const calculateBalance = (transactions: Transaction[]): number => {
 
 /**
  * Calculates the Total Pot for a single rotation cycle.
- * Handles the "Exception Handling" rule where contributions might differ.
+ * DEPRECATED for display logic in variable groups, but kept for legacy sum calculations.
  */
 export const calculateCyclePot = (baseAmount: number, participants: Participant[]): number => {
     return participants.reduce((sum, p) => {
         return sum + (p.customContribution !== undefined ? p.customContribution : baseAmount);
     }, 0);
+};
+
+// --- VARIABLE CONTRIBUTION LOGIC ---
+
+/**
+ * Determines the contribution amount required from EVERYONE for a specific round.
+ * Rule: The round amount is dictated by the Beneficiary's base contribution.
+ */
+export const getRoundBaseAmount = (xitiqueBase: number, beneficiary: Participant): number => {
+    return beneficiary.customContribution !== undefined ? beneficiary.customContribution : xitiqueBase;
+};
+
+/**
+ * Calculates the total payout a specific beneficiary will receive.
+ * Formula: BeneficiaryBase * NumberOfParticipants
+ */
+export const calculateDynamicPot = (xitique: Xitique, beneficiary: Participant): number => {
+    const roundBase = getRoundBaseAmount(xitique.amount, beneficiary);
+    return roundBase * xitique.participants.length;
 };
 
 /**

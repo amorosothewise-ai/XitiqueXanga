@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Frequency, Xitique, PaymentMethod } from '../types';
+import { Frequency, Xitique, PaymentMethod, ContributionMode, XitiqueStatus } from '../types';
 import { createNewXitique, saveXitique } from '../services/storage';
 import { addPeriod, formatDate } from '../services/dateUtils';
-import { ChevronRight, ChevronLeft, Check, UserPlus, Trash2, ArrowUp, ArrowDown, Calendar, GripVertical, Lock, Unlock, Smartphone, Banknote, RefreshCw, Loader2 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, UserPlus, Trash2, ArrowUp, ArrowDown, Calendar, GripVertical, Lock, Unlock, Smartphone, Banknote, RefreshCw, Loader2, Scale, BarChart3 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 
@@ -22,10 +22,13 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
   const [amount, setAmount] = useState(100);
   const [frequency, setFrequency] = useState<Frequency>(Frequency.MONTHLY);
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.MPESA);
+  const [contributionMode, setContributionMode] = useState<ContributionMode>(ContributionMode.UNIFORM);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [participantNames, setParticipantNames] = useState<string[]>(['', '']);
   
-  const [orderedParticipants, setOrderedParticipants] = useState<string[]>([]);
+  // Participants now hold both name and specific amount
+  const [participantsData, setParticipantsData] = useState<{name: string, amount: number}[]>([{name: '', amount: 0}, {name: '', amount: 0}]);
+  
+  const [orderedParticipants, setOrderedParticipants] = useState<{name: string, amount: number}[]>([]);
   const [lockedIndices, setLockedIndices] = useState<Set<number>>(new Set());
 
   // Initialization Logic for Renewal
@@ -36,35 +39,56 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
         setFrequency(initialData.frequency);
         if(initialData.method) setMethod(initialData.method);
         
-        // Extract names from previous participants
-        const names = initialData.participants.map(p => p.name);
-        setParticipantNames(names);
+        // Detect if it was variable before by checking if any custom contributions existed
+        const hasCustom = initialData.participants.some(p => p.customContribution !== undefined && p.customContribution !== initialData.amount);
+        setContributionMode(hasCustom ? ContributionMode.VARIABLE : ContributionMode.UNIFORM);
+
+        // Extract names and amounts
+        const pData = initialData.participants.map(p => ({
+            name: p.name,
+            amount: p.customContribution !== undefined ? p.customContribution : initialData.amount
+        }));
+        setParticipantsData(pData);
         
         // Ensure start date is today or future, not old date
         setStartDate(new Date().toISOString().split('T')[0]);
     }
   }, [initialData]);
 
+  // When contribution mode changes to uniform, reset all individual amounts to base amount
+  useEffect(() => {
+    if (contributionMode === ContributionMode.UNIFORM) {
+        setParticipantsData(prev => prev.map(p => ({ ...p, amount: amount })));
+    }
+  }, [contributionMode, amount]);
+
+  // When entering Step 3, init the ordered list if empty
   useEffect(() => {
     if (step === 3 && orderedParticipants.length === 0) {
-        setOrderedParticipants(participantNames.filter(n => n.trim() !== ''));
+        setOrderedParticipants(participantsData.filter(p => p.name.trim() !== ''));
     }
-  }, [step, participantNames]);
+  }, [step, participantsData]);
 
   const handleAddParticipant = () => {
-    setParticipantNames([...participantNames, '']);
+    setParticipantsData([...participantsData, { name: '', amount: amount }]);
   };
 
   const handleRemoveParticipant = (index: number) => {
-    const newNames = [...participantNames];
-    newNames.splice(index, 1);
-    setParticipantNames(newNames);
+    const newData = [...participantsData];
+    newData.splice(index, 1);
+    setParticipantsData(newData);
   };
 
   const handleNameChange = (index: number, val: string) => {
-    const newNames = [...participantNames];
-    newNames[index] = val;
-    setParticipantNames(newNames);
+    const newData = [...participantsData];
+    newData[index].name = val;
+    setParticipantsData(newData);
+  };
+
+  const handleAmountChange = (index: number, val: number) => {
+    const newData = [...participantsData];
+    newData[index].amount = val;
+    setParticipantsData(newData);
   };
 
   const toggleLock = (index: number) => {
@@ -102,21 +126,26 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
   const handleFinish = async () => {
     setLoading(true);
     // Generate NEW IDs for participants to ensure no reference linking to old cycle
-    const participants = orderedParticipants.map((pName, index) => ({
+    const participants = orderedParticipants.map((p, index) => ({
       id: crypto.randomUUID(),
-      name: pName,
+      name: p.name,
       received: false,
       order: index + 1,
-      payoutDate: addPeriod(startDate, frequency, index)
+      payoutDate: addPeriod(startDate, frequency, index),
+      // If Uniform, customContribution is undefined. If Variable, use specific amount.
+      customContribution: contributionMode === ContributionMode.VARIABLE ? p.amount : undefined
     }));
     
+    const status = contributionMode === ContributionMode.VARIABLE ? XitiqueStatus.RISK : XitiqueStatus.PLANNING;
+
     const newXitique = createNewXitique({
       name,
       amount,
       frequency,
       method,
       startDate: new Date(startDate).toISOString(),
-      participants
+      participants,
+      status: status // If variable, start as RISK/Active immediately to flag the difference
     });
 
     try {
@@ -170,15 +199,55 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                 </h3>
                 
                 <div className="group mb-6">
-                <label className="block text-sm font-bold text-slate-700 mb-2">{t('wiz.label_name')}</label>
-                <input 
-                    type="text" 
-                    value={name} 
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={t('wiz.placeholder_name')}
-                    className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-                    autoFocus
-                />
+                    <label className="block text-sm font-bold text-slate-700 mb-2">{t('wiz.label_name')}</label>
+                    <input 
+                        type="text" 
+                        value={name} 
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder={t('wiz.placeholder_name')}
+                        className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                        autoFocus
+                    />
+                </div>
+
+                {/* Contribution Mode Selection */}
+                <div className="mb-6">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">{t('wiz.mode_title')}</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div 
+                            onClick={() => setContributionMode(ContributionMode.UNIFORM)}
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 ${
+                                contributionMode === ContributionMode.UNIFORM 
+                                ? 'border-emerald-500 bg-emerald-50' 
+                                : 'border-slate-200 bg-white hover:border-slate-300'
+                            }`}
+                        >
+                            <div className={`p-2 rounded-full ${contributionMode === ContributionMode.UNIFORM ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                <Scale size={20} />
+                            </div>
+                            <div>
+                                <div className="font-bold text-slate-900">{t('wiz.mode_uniform')}</div>
+                                <div className="text-xs text-slate-500">{t('wiz.mode_uniform_desc')}</div>
+                            </div>
+                        </div>
+
+                        <div 
+                            onClick={() => setContributionMode(ContributionMode.VARIABLE)}
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 ${
+                                contributionMode === ContributionMode.VARIABLE 
+                                ? 'border-indigo-500 bg-indigo-50' 
+                                : 'border-slate-200 bg-white hover:border-slate-300'
+                            }`}
+                        >
+                            <div className={`p-2 rounded-full ${contributionMode === ContributionMode.VARIABLE ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                <BarChart3 size={20} />
+                            </div>
+                            <div>
+                                <div className="font-bold text-slate-900">{t('wiz.mode_variable')}</div>
+                                <div className="text-xs text-slate-500">{t('wiz.mode_variable_desc')}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -268,26 +337,47 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                 <p className="text-sm text-slate-500 mb-6 ml-10">
                     {t('wiz.add_member_desc')}
                 </p>
+
+                {/* Header for table if variable */}
+                {contributionMode === ContributionMode.VARIABLE && (
+                    <div className="flex gap-4 px-2 mb-2 text-xs font-bold text-slate-400 uppercase">
+                        <span className="w-10 text-center">#</span>
+                        <span className="flex-1">{t('wiz.col_name')}</span>
+                        <span className="w-32">{t('wiz.col_amount')}</span>
+                        <span className="w-10"></span>
+                    </div>
+                )}
                 
                 <div className="max-h-[400px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                {participantNames.map((pName, idx) => (
+                {participantsData.map((p, idx) => (
                     <div key={idx} className="flex items-center gap-3 animate-fade-in">
-                    <span className="bg-slate-100 text-slate-400 w-10 h-10 flex items-center justify-center rounded-xl text-sm font-bold border border-slate-200">
-                        {idx + 1}
-                    </span>
-                    <input
-                        type="text"
-                        placeholder={t('wiz.placeholder_member')}
-                        value={pName}
-                        onChange={(e) => handleNameChange(idx, e.target.value)}
-                        className="flex-1 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                        autoFocus={idx === participantNames.length - 1 && idx > 0}
-                    />
-                    {participantNames.length > 2 && (
-                        <button onClick={() => handleRemoveParticipant(idx)} className="text-slate-300 hover:text-red-500 transition-colors p-2">
-                        <Trash2 size={20} />
-                        </button>
-                    )}
+                        <span className="bg-slate-100 text-slate-400 w-10 h-10 flex items-center justify-center rounded-xl text-sm font-bold border border-slate-200 flex-shrink-0">
+                            {idx + 1}
+                        </span>
+                        <input
+                            type="text"
+                            placeholder={t('wiz.placeholder_member')}
+                            value={p.name}
+                            onChange={(e) => handleNameChange(idx, e.target.value)}
+                            className="flex-1 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all min-w-0"
+                            autoFocus={idx === participantsData.length - 1 && idx > 0}
+                        />
+                        {contributionMode === ContributionMode.VARIABLE && (
+                             <div className="relative w-32 flex-shrink-0">
+                                <span className="absolute left-2 top-3 text-slate-400 text-xs font-bold">$</span>
+                                <input 
+                                    type="number" 
+                                    value={p.amount} 
+                                    onChange={(e) => handleAmountChange(idx, Number(e.target.value))}
+                                    className="w-full pl-5 p-3 border border-indigo-200 bg-indigo-50/50 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-indigo-900 text-sm"
+                                />
+                             </div>
+                        )}
+                        {participantsData.length > 2 && (
+                            <button onClick={() => handleRemoveParticipant(idx)} className="text-slate-300 hover:text-red-500 transition-colors p-2 flex-shrink-0">
+                                <Trash2 size={20} />
+                            </button>
+                        )}
                     </div>
                 ))}
                 </div>
@@ -316,7 +406,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                 </div>
                 
                 <div className="space-y-3 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    {orderedParticipants.map((pName, idx) => {
+                    {orderedParticipants.map((p, idx) => {
                         const calculatedDate = addPeriod(startDate, frequency, idx);
                         const isLast = idx === orderedParticipants.length - 1;
                         const isFirst = idx === 0;
@@ -341,9 +431,16 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                                             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isLocked ? 'bg-rose-200 text-rose-700' : 'bg-slate-100 text-slate-500'}`}>
                                                 {idx + 1}
                                             </span>
-                                            <span className={`font-bold text-lg ${isLocked ? 'text-rose-700' : 'text-slate-800'}`}>
-                                                {pName}
-                                            </span>
+                                            <div>
+                                                <span className={`font-bold text-lg block ${isLocked ? 'text-rose-700' : 'text-slate-800'}`}>
+                                                    {p.name}
+                                                </span>
+                                                {contributionMode === ContributionMode.VARIABLE && (
+                                                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                                                        Pays: {p.amount} MT
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                         
                                         <div className={`flex items-center text-sm font-semibold px-3 py-1.5 rounded-lg ${isLocked ? 'bg-rose-200 text-rose-800' : 'bg-emerald-50 text-emerald-700'}`}>
@@ -400,7 +497,11 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
             <p className="text-slate-500 mb-8 max-w-md mx-auto leading-relaxed">
               {t('wiz.ready_desc')}
               <br />
-              <span className="text-slate-400 text-sm">{t('wiz.total_pot')}</span> <strong className="text-emerald-600 text-2xl">{t('common.currency')} {amount * participantNames.filter(n => n).length}</strong>
+              {contributionMode === ContributionMode.UNIFORM ? (
+                  <><span className="text-slate-400 text-sm">{t('wiz.total_pot')}</span> <strong className="text-emerald-600 text-2xl">{t('common.currency')} {amount * orderedParticipants.length}</strong></>
+              ) : (
+                   <span className="text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded">{t('wiz.mode_variable')}</span>
+              )}
             </p>
             
             <div className="bg-white border border-slate-200 p-8 rounded-2xl text-left shadow-sm max-w-lg mx-auto">
@@ -408,11 +509,11 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                <ul className="space-y-4 text-sm">
                  <li className="flex justify-between items-center">
                     <span className="text-slate-500">{t('wiz.first_payout')}</span>
-                    <span className="font-bold text-slate-900 bg-slate-50 px-2 py-1 rounded">{orderedParticipants[0]}</span>
+                    <span className="font-bold text-slate-900 bg-slate-50 px-2 py-1 rounded">{orderedParticipants[0]?.name}</span>
                  </li>
                  <li className="flex justify-between items-center">
                     <span className="text-slate-500">{t('wiz.last_payout')}</span>
-                    <span className="font-bold text-slate-900 bg-slate-50 px-2 py-1 rounded">{orderedParticipants[orderedParticipants.length-1]}</span>
+                    <span className="font-bold text-slate-900 bg-slate-50 px-2 py-1 rounded">{orderedParticipants[orderedParticipants.length-1]?.name}</span>
                  </li>
                  <li className="flex justify-between items-center">
                     <span className="text-slate-500">{t('wiz.locked_dates')}</span>
@@ -440,7 +541,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
               onClick={() => {
                 if(step === 1 && !name) { addToast(t('wiz.alert_name'), 'error'); return; }
                 if(step === 2) {
-                     const valid = participantNames.filter(n => n.trim() !== '');
+                     const valid = participantsData.filter(p => p.name.trim() !== '');
                      if (valid.length < 2) { addToast(t('wiz.alert_members'), 'error'); return; }
                      if (valid.length !== orderedParticipants.length) {
                          setOrderedParticipants(valid);
