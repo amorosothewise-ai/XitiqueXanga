@@ -32,7 +32,7 @@ export const login = async (email: string, password: string): Promise<AuthSessio
   // Mandatory Email Verification Check
   if (!data.user.email_confirmed_at) {
     await supabase.auth.signOut();
-    throw new Error('Email not verified. Please check your inbox and verify your email.');
+    throw new Error('EMAIL_NOT_VERIFIED');
   }
 
   return {
@@ -60,15 +60,16 @@ export const register = async (name: string, email: string, password: string): P
       data: {
         full_name: name,
         language: 'pt',
-      }
+      },
+      emailRedirectTo: window.location.origin
     }
   });
 
   if (error) throw error;
   
-  // If email confirmation is enabled, session is usually null.
-  // We throw a specific error to trigger the UI prompt.
+  // If email confirmation is enabled, enforce it strictly.
   if (data.user && !data.user.email_confirmed_at) {
+     await supabase.auth.signOut(); // Ensure no unverified session persists
      throw new Error('CONFIRMATION_REQUIRED');
   }
 
@@ -78,6 +79,17 @@ export const register = async (name: string, email: string, password: string): P
     user: mapUser(data.user),
     token: data.session.access_token
   };
+};
+
+export const resendVerification = async (email: string): Promise<void> => {
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+    options: {
+      emailRedirectTo: window.location.origin
+    }
+  });
+  if (error) throw error;
 };
 
 export const logout = async (): Promise<void> => {

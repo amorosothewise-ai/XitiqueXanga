@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { Lock, Mail, User, ArrowRight, Loader2, Chrome } from 'lucide-react';
+import { resendVerification } from '../services/authService';
+import { Lock, Mail, User, ArrowRight, Loader2, Chrome, AlertCircle, Send } from 'lucide-react';
 
 const AuthScreen: React.FC = () => {
   const { login, loginWithGoogle, register } = useAuth();
@@ -14,10 +15,14 @@ const AuthScreen: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  
+  const [showResend, setShowResend] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setShowResend(false);
+
     try {
       if (isLogin) {
         await login(email, password);
@@ -27,12 +32,31 @@ const AuthScreen: React.FC = () => {
         addToast('Account created successfully!', 'success');
       }
     } catch (err: any) {
+      console.error(err);
       if (err.message === 'CONFIRMATION_REQUIRED') {
          addToast('Success! Please check your email to verify your account.', 'info');
-         setIsLogin(true); // Switch back to login view so they can login after verifying
+         setIsLogin(true);
+      } else if (err.message === 'EMAIL_NOT_VERIFIED') {
+         addToast('Email not verified. Please check your inbox.', 'error');
+         setShowResend(true);
+      } else if (err.message.includes('Invalid login credentials')) {
+         addToast('Invalid email or password.', 'error');
       } else {
          addToast(err.message || 'Authentication failed. Please try again.', 'error');
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setLoading(true);
+    try {
+      await resendVerification(email);
+      addToast('Verification email sent!', 'success');
+      setShowResend(false);
+    } catch (err: any) {
+      addToast(err.message || 'Failed to resend email.', 'error');
     } finally {
       setLoading(false);
     }
@@ -42,10 +66,10 @@ const AuthScreen: React.FC = () => {
     setLoading(true);
     try {
         await loginWithGoogle();
-        addToast('Signed in with Google!', 'success');
+        // Redirect usually happens before this toast is seen, but added for completeness
+        addToast('Redirecting to Google...', 'success');
     } catch (err) {
-        addToast('Google Sign-In failed.', 'error');
-    } finally {
+        addToast('Google Sign-In failed. Please check configuration.', 'error');
         setLoading(false);
     }
   };
@@ -81,8 +105,8 @@ const AuthScreen: React.FC = () => {
       </div>
 
       {/* Right: Form */}
-      <div className="md:w-1/2 flex items-center justify-center p-6">
-        <div className="w-full max-w-md space-y-8 bg-white p-8 md:p-10 rounded-3xl shadow-xl border border-slate-100">
+      <div className="md:w-1/2 flex items-center justify-center p-6 bg-white md:bg-transparent">
+        <div className="w-full max-w-md space-y-8 bg-white md:p-10 rounded-3xl md:shadow-xl md:border border-slate-100">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-slate-900 mb-2">
               {isLogin ? 'Welcome Back' : 'Create Account'}
@@ -91,6 +115,22 @@ const AuthScreen: React.FC = () => {
               {isLogin ? 'Enter your details to access your dashboard.' : 'Start your financial journey today.'}
             </p>
           </div>
+
+          {showResend && (
+             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-amber-800 font-bold text-sm">
+                   <AlertCircle size={16} /> Verification Required
+                </div>
+                <p className="text-xs text-amber-700">You must verify your email before logging in.</p>
+                <button 
+                  onClick={handleResend}
+                  disabled={loading}
+                  className="mt-1 bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Send size={12} /> Resend Verification Email
+                </button>
+             </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {!isLogin && (
@@ -172,7 +212,10 @@ const AuthScreen: React.FC = () => {
              <p className="text-slate-500 text-sm">
                {isLogin ? "Don't have an account? " : "Already have an account? "}
                <button 
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={() => {
+                   setIsLogin(!isLogin);
+                   setShowResend(false);
+                }}
                 className="font-bold text-emerald-600 hover:text-emerald-700 hover:underline"
                >
                  {isLogin ? 'Sign Up' : 'Log In'}
