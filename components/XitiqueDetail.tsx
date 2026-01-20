@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Xitique, Participant, TransactionType, XitiqueStatus } from '../types';
-import { formatDate } from '../services/dateUtils';
+import { formatDate, addPeriod } from '../services/dateUtils';
 import { formatCurrency } from '../services/formatUtils';
 import { analyzeFairness } from '../services/geminiService';
 import { saveXitique } from '../services/storage';
 import { createTransaction, calculateCyclePot } from '../services/financeLogic';
-import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Loader2 } from 'lucide-react';
+import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import FinancialTip from './FinancialTip';
@@ -19,6 +19,8 @@ interface Props {
   onRenew?: (xitique: Xitique) => void;
 }
 
+type SortKey = 'order' | 'name' | 'payoutDate' | 'received';
+
 const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) => {
   const { t } = useLanguage();
   const { addToast } = useToast();
@@ -30,9 +32,20 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
   const [isEditingBase, setIsEditingBase] = useState(false);
   const [newBaseAmount, setNewBaseAmount] = useState(xitique.amount);
 
-  // Edit State (Individual)
-  const [editingParticipantId, setEditingParticipantId] = useState<string | null>(null);
-  const [individualAmount, setIndividualAmount] = useState<number>(0);
+  // Edit State (Individual Participant)
+  const [editForm, setEditForm] = useState<{
+      id: string;
+      name: string;
+      date: string;
+      amount: number;
+  } | null>(null);
+
+  // Search & Sort State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' }>({ key: 'order', direction: 'asc' });
+
+  // Drag & Drop State
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   // Derived State
   const potSize = calculateCyclePot(xitique.amount, xitique.participants);
@@ -61,6 +74,233 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
   }, [xitique.amount]);
 
   // --- Logic ---
+
+  // Filter & Sort Logic
+  const processedParticipants = [...xitique.participants]
+    .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => {
+      const dir = sortConfig.direction === 'asc' ? 1 : -1;
+      
+      switch (sortConfig.key) {
+        case 'name':
+          return a.name.localeCompare(b.name) * dir;
+        case 'received':
+          return (Number(a.received) - Number(b.received)) * dir;
+        case 'payoutDate':
+           const dateA = a.payoutDate ? new Date(a.payoutDate).getTime() : 0;
+           const dateB = b.payoutDate ? new Date(b.payoutDate).getTime() : 0;
+           return (dateA - dateB) * dir;
+        case 'order':
+        default:
+          return (a.order - b.order) * dir;
+      }
+    });
+
+  const canDrag = sortConfig.key === 'order' && searchTerm === '';
+
+  const handleSort = (key: SortKey) => {
+      setSortConfig(current => ({
+          key,
+          direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+      }));
+  };
+
+  // Drag Handlers
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+      if (!canDrag) return;
+      setDraggedId(id);
+      e.dataTransfer.effectAllowed = 'move';
+      // Hide the drag image ghost if desired, or let default behavior handle it
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+      if (!canDrag) return;
+      e.preventDefault(); 
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: string) => {
+      e.preventDefault();
+      if (!canDrag || !draggedId || draggedId === targetId) return;
+
+      const items = [...xitique.participants];
+      const oldIndex = items.findIndex(i => i.id === draggedId);
+      const newIndex = items.findIndex(i => i.id === targetId);
+
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      // Move item
+      const [movedItem] = items.splice(oldIndex, 1);
+      items.splice(newIndex, 0, movedItem);
+
+      // Reassign order based on new index
+      const updatedParticipants = items.map((p, index) => ({
+          ...p,
+          order: index + 1
+      }));
+
+      // Optimistic update
+      xitique.participants = updatedParticipants;
+      
+      const updatedXitique = { ...xitique, participants: updatedParticipants };
+      await saveXitique(updatedXitique);
+      
+      addToast('Ordem atualizada', 'success');
+      setDraggedId(null);
+  };
+
+  const handleAddMember = async () => {
+      const newOrder = xitique.participants.length + 1;
+      
+      // Predict next date
+      let nextDate = new Date().toISOString();
+      if (xitique.participants.length > 0) {
+          const lastDate = xitique.participants[xitique.participants.length - 1].payoutDate;
+          if (lastDate) {
+             nextDate = addPeriod(lastDate, xitique.frequency, 1);
+          } else {
+             nextDate = addPeriod(xitique.startDate, xitique.frequency, xitique.participants.length);
+          }
+      }
+
+      const newMember: Participant = {
+          id: crypto.randomUUID(),
+          name: "Novo Membro",
+          received: false,
+          order: newOrder,
+          payoutDate: nextDate,
+          customContribution: xitique.amount
+      };
+
+      const updatedParticipants = [...xitique.participants, newMember];
+      
+      const updatedXitique = { ...xitique, participants: updatedParticipants };
+      await saveXitique(updatedXitique);
+      xitique.participants = updatedParticipants;
+      
+      startEditingParticipant(newMember);
+      addToast('Membro adicionado', 'success');
+  };
+
+  const startEditingParticipant = (p: Participant) => {
+      setEditForm({
+          id: p.id,
+          name: p.name,
+          date: p.payoutDate ? new Date(p.payoutDate).toISOString().split('T')[0] : '',
+          amount: p.customContribution !== undefined ? p.customContribution : xitique.amount
+      });
+  };
+
+  const saveParticipantChanges = async () => {
+      if (!editForm) return;
+
+      const updatedParticipants = xitique.participants.map(p => {
+          if (p.id === editForm.id) {
+              return { 
+                  ...p, 
+                  name: editForm.name,
+                  payoutDate: editForm.date ? new Date(editForm.date).toISOString() : undefined,
+                  customContribution: editForm.amount 
+              };
+          }
+          return p;
+      });
+
+      const isRisk = updatedParticipants.some(p => {
+         const val = p.customContribution !== undefined ? p.customContribution : xitique.amount;
+         return val !== xitique.amount;
+      });
+
+      const newStatus = isRisk ? XitiqueStatus.RISK : (xitique.status === XitiqueStatus.RISK ? XitiqueStatus.ACTIVE : xitique.status);
+
+      const updatedXitique = { 
+          ...xitique, 
+          participants: updatedParticipants,
+          status: newStatus 
+      };
+      
+      await saveXitique(updatedXitique);
+      xitique.participants = updatedParticipants;
+      xitique.status = newStatus;
+      setEditForm(null);
+      addToast('Membro atualizado', 'success');
+  };
+
+  const handleBulkToggle = () => {
+    if (isCompleted && xitique.participants.every(p => p.received)) {
+         setConfirmModal({
+            isOpen: true,
+            type: 'danger',
+            title: t('modal.reversal_title') + " (All)",
+            desc: "This will revert the status of ALL participants to 'Pending' and reopen the Xitique. Are you sure?",
+            confirmText: "Revert All",
+            action: executeBulkToggle
+        });
+        return;
+    }
+
+    const allPaid = xitique.participants.every(p => p.received);
+    
+    setConfirmModal({
+        isOpen: true,
+        type: 'success',
+        title: allPaid ? "Mark All as Pending?" : "Mark All as Paid?",
+        desc: allPaid 
+            ? "This will reverse all payments." 
+            : `This will mark all remaining participants as paid. This will change the Xitique status to ${XitiqueStatus.COMPLETED}.`,
+        confirmText: allPaid ? "Revert All" : "Confirm All Payouts",
+        action: executeBulkToggle
+    });
+  };
+
+  const executeBulkToggle = async () => {
+    const allCurrentlyPaid = xitique.participants.every(p => p.received);
+    const targetState = !allCurrentlyPaid; 
+
+    const newTransactions: any[] = [];
+    
+    const updatedParticipants = xitique.participants.map(p => {
+        if (p.received !== targetState) {
+             if (targetState) {
+                newTransactions.push(createTransaction(
+                    TransactionType.PAYOUT,
+                    potSize, 
+                    `${t('ind.type_payout')}: ${p.name} (Bulk)`
+                ));
+            } else {
+                newTransactions.push(createTransaction(
+                    TransactionType.PAYOUT_REVERSAL,
+                    potSize,
+                    `Correction (Reversal): ${p.name} (Bulk)`
+                ));
+            }
+            return { ...p, received: targetState };
+        }
+        return p;
+    });
+
+    const updatedTx = [...newTransactions, ...(xitique.transactions || [])];
+    
+    let newStatus = XitiqueStatus.ACTIVE;
+    if (targetState) {
+        newStatus = XitiqueStatus.COMPLETED;
+    } else {
+        newStatus = hasUnequalContributions ? XitiqueStatus.RISK : XitiqueStatus.ACTIVE;
+    }
+
+    const updatedXitique = { 
+        ...xitique, 
+        participants: updatedParticipants,
+        transactions: updatedTx,
+        status: newStatus
+    };
+    
+    await saveXitique(updatedXitique);
+    xitique.participants = updatedParticipants; 
+    xitique.transactions = updatedTx;
+    xitique.status = newStatus;
+    
+    addToast(targetState ? 'Todos marcados como pagos' : 'Todos revertidos', 'success');
+  };
 
   const handleShare = async () => {
     try {
@@ -167,9 +407,6 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
     
     await saveXitique(updatedXitique);
     
-    // Mutate local state only after successful save or rely on re-fetch. 
-    // For smoothness, mutating local props reference or triggering reload is needed.
-    // Ideally parent should refetch, but here we update local reference for instant UI feedback.
     xitique.participants = updatedParticipants; 
     xitique.transactions = updatedTx;
     xitique.status = updatedXitique.status;
@@ -180,44 +417,23 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
 
   const saveBaseContributionChange = async () => {
     if (newBaseAmount <= 0) return;
-    const updatedXitique = { ...xitique, amount: newBaseAmount };
+    const isRisk = xitique.participants.some(p => {
+        const val = p.customContribution !== undefined ? p.customContribution : newBaseAmount;
+        return val !== newBaseAmount;
+    });
+
+    const newStatus = isRisk ? XitiqueStatus.RISK : XitiqueStatus.ACTIVE;
+    const updatedXitique = { 
+        ...xitique, 
+        amount: newBaseAmount,
+        status: newStatus 
+    };
+
     await saveXitique(updatedXitique);
     xitique.amount = newBaseAmount; 
+    xitique.status = newStatus;
     setIsEditingBase(false);
     addToast('Contribuição base atualizada', 'success');
-  };
-
-  const startEditingParticipant = (p: Participant) => {
-      setIndividualAmount(p.customContribution !== undefined ? p.customContribution : xitique.amount);
-      setEditingParticipantId(p.id);
-  };
-
-  const saveIndividualContribution = async (id: string) => {
-      const updatedParticipants = xitique.participants.map(p => {
-          if (p.id === id) {
-              return { ...p, customContribution: individualAmount };
-          }
-          return p;
-      });
-
-      // Determine if there are unequal contributions
-      const isRisk = updatedParticipants.some(p => {
-         const val = p.customContribution !== undefined ? p.customContribution : xitique.amount;
-         return val !== xitique.amount;
-      });
-
-      const newStatus = isRisk ? XitiqueStatus.RISK : XitiqueStatus.ACTIVE;
-
-      const updatedXitique = { 
-          ...xitique, 
-          participants: updatedParticipants,
-          status: newStatus 
-      };
-      await saveXitique(updatedXitique);
-      xitique.participants = updatedParticipants;
-      xitique.status = newStatus;
-      setEditingParticipantId(null);
-      addToast('Contribuição individual atualizada', 'success');
   };
 
   const requestDelete = () => {
@@ -253,16 +469,10 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
           <ArrowLeft size={20} className="mr-2" /> {t('detail.back')}
         </button>
         <div className="flex gap-2">
-            <button 
-                onClick={handleShare}
-                className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-4 py-2 rounded-xl flex items-center text-sm font-bold transition-colors border border-emerald-200"
-            >
+            <button onClick={handleShare} className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-4 py-2 rounded-xl flex items-center text-sm font-bold transition-colors border border-emerald-200">
                 <Share2 size={18} className="mr-2" /> {t('detail.share')}
             </button>
-            <button 
-                onClick={requestDelete}
-                className="text-red-500 hover:bg-red-50 px-4 py-2 rounded-xl flex items-center text-sm font-medium transition-colors"
-            >
+            <button onClick={requestDelete} className="text-red-500 hover:bg-red-50 px-4 py-2 rounded-xl flex items-center text-sm font-medium transition-colors">
                 <Trash size={18} className="mr-2" /> {t('detail.delete')}
             </button>
         </div>
@@ -283,28 +493,16 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                           <p className="text-indigo-200">{t('end.subtitle')}</p>
                       </div>
                   </div>
-                  
-                  <p className="mb-8 text-indigo-100 max-w-2xl leading-relaxed">
-                      {t('end.question')}
-                  </p>
-
+                  <p className="mb-8 text-indigo-100 max-w-2xl leading-relaxed">{t('end.question')}</p>
                   <div className="flex flex-col sm:flex-row gap-4">
-                      <button 
-                         onClick={handleRenewClick}
-                         className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-transform transform hover:-translate-y-1 flex items-center gap-2 justify-center"
-                      >
+                      <button onClick={handleRenewClick} className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-transform transform hover:-translate-y-1 flex items-center gap-2 justify-center">
                          <RefreshCw size={20} /> {t('end.btn_renew')}
                       </button>
-                      <button 
-                         onClick={onBack} 
-                         className="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-6 rounded-xl border border-white/10 transition-colors flex items-center gap-2 justify-center"
-                      >
+                      <button onClick={onBack} className="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-6 rounded-xl border border-white/10 transition-colors flex items-center gap-2 justify-center">
                          <Archive size={20} /> {t('end.btn_terminate')}
                       </button>
                   </div>
-                  <p className="mt-4 text-xs text-indigo-300 flex items-center gap-1">
-                      <Clock size={12} /> {t('end.renew_info')}
-                  </p>
+                  <p className="mt-4 text-xs text-indigo-300 flex items-center gap-1"><Clock size={12} /> {t('end.renew_info')}</p>
               </div>
           </div>
       )}
@@ -471,89 +669,184 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
       {/* Tab Content (Schedule) */}
       {activeTab === 'schedule' && (
         <div className="space-y-4">
-          <div className="grid gap-4">
-            {xitique.participants.map((p, idx) => (
+          
+          {/* Controls: Search, Filter, Sort, Bulk Actions */}
+          <div className="flex flex-col md:flex-row gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+             <div className="flex-1 relative">
+                 <Search className="absolute left-3 top-3 text-slate-400" size={18} />
+                 <input 
+                   type="text" 
+                   placeholder="Search member..." 
+                   className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
+                   value={searchTerm}
+                   onChange={(e) => setSearchTerm(e.target.value)}
+                 />
+             </div>
+             
+             <div className="flex gap-2">
+                 <button 
+                   onClick={() => handleSort('name')}
+                   className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1 border transition-colors ${sortConfig.key === 'name' ? 'bg-white border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                 >
+                    <ArrowUpDown size={14} /> Name
+                 </button>
+                 <button 
+                   onClick={() => handleSort('payoutDate')}
+                   className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1 border transition-colors ${sortConfig.key === 'payoutDate' ? 'bg-white border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                 >
+                    <Calendar size={14} /> Date
+                 </button>
+                  <button 
+                   onClick={() => handleSort('received')}
+                   className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1 border transition-colors ${sortConfig.key === 'received' ? 'bg-white border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                 >
+                    <Filter size={14} /> Status
+                 </button>
+             </div>
+
+             <div className="w-px bg-slate-200 hidden md:block mx-1"></div>
+
+             <button 
+                onClick={handleBulkToggle}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
+             >
+                {xitique.participants.every(p => p.received) ? <CheckSquare size={16} /> : <Square size={16} />}
+                Select All
+             </button>
+          </div>
+
+          <div className="grid gap-3">
+            {processedParticipants.map((p, idx) => {
+              const isEditing = editForm?.id === p.id;
+              
+              return (
               <div 
                 key={p.id} 
-                className={`flex flex-col md:flex-row md:items-center justify-between p-5 rounded-2xl border transition-all ${
+                draggable={canDrag && !isEditing}
+                onDragStart={(e) => handleDragStart(e, p.id)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, p.id)}
+                className={`flex flex-col md:flex-row md:items-center justify-between p-4 rounded-2xl border transition-all ${
+                  isEditing ? 'bg-emerald-50 border-emerald-200 shadow-md ring-1 ring-emerald-300' : 
                   p.received 
-                    ? 'bg-emerald-50/50 border-emerald-100' 
+                    ? 'bg-slate-50 border-slate-100 opacity-75 hover:opacity-100' 
                     : 'bg-white border-slate-200 hover:border-emerald-200 shadow-sm'
                 }`}
               >
-                <div className="flex items-center gap-5 mb-4 md:mb-0 w-full md:w-auto">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl shadow-sm ${
-                    p.received ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-100 text-slate-600'
-                  }`}>
-                    {idx + 1}
+                <div className="flex items-center gap-4 mb-4 md:mb-0 w-full md:w-auto">
+                  {/* Drag Handle */}
+                  <div className={`cursor-grab ${canDrag ? 'text-slate-400 hover:text-emerald-500' : 'text-slate-200 cursor-not-allowed'}`}>
+                     <GripVertical size={20} />
                   </div>
-                  <div className="flex-1">
-                    <h3 className={`font-bold text-lg flex items-center gap-2 ${p.received ? 'text-emerald-900' : 'text-slate-900'}`}>
-                      {p.name}
-                      {!p.received && editingParticipantId !== p.id && !isCompleted && (
-                          <button 
-                            onClick={() => startEditingParticipant(p)}
-                            className="text-slate-300 hover:text-emerald-500 transition-colors p-1"
-                            title={t('detail.edit_member')}
-                          >
-                             <Pencil size={14} />
-                          </button>
-                      )}
-                    </h3>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm mt-1">
-                         <div className="flex items-center gap-1 text-slate-500">
-                             <Clock size={14} />
-                             {p.payoutDate ? formatDate(p.payoutDate) : t('detail.date_tbd')}
-                         </div>
-                         <div className={`flex items-center gap-1 font-mono font-medium ${p.customContribution !== undefined && p.customContribution !== xitique.amount ? 'text-amber-600' : 'text-slate-400'}`}>
-                             {editingParticipantId === p.id ? (
-                                 <div className="flex items-center gap-2 animate-fade-in">
-                                     <input 
-                                       type="number"
-                                       value={individualAmount}
-                                       onChange={(e) => setIndividualAmount(Number(e.target.value))}
-                                       className="w-24 p-1 border border-emerald-300 rounded text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none"
-                                       autoFocus
-                                     />
-                                     <button onClick={() => saveIndividualContribution(p.id)} className="bg-emerald-500 text-white p-1 rounded hover:bg-emerald-600"><Check size={14}/></button>
-                                     <button onClick={() => setEditingParticipantId(null)} className="bg-slate-200 text-slate-500 p-1 rounded hover:bg-slate-300"><X size={14}/></button>
-                                 </div>
-                             ) : (
-                                 <>
-                                   <DollarSign size={14} />
-                                   {formatCurrency(p.customContribution !== undefined ? p.customContribution : xitique.amount)}
-                                 </>
-                             )}
-                         </div>
-                    </div>
+
+                  {/* Checkbox Status */}
+                  <button 
+                      onClick={() => handleToggleClick(p.id)}
+                      disabled={isCompleted || isEditing}
+                      className={`transition-colors p-1 rounded-md ${p.received ? 'text-emerald-500 hover:text-emerald-600' : 'text-slate-300 hover:text-slate-500'}`}
+                  >
+                      {p.received ? <CheckSquare size={24} /> : <Square size={24} />}
+                  </button>
+
+                  {/* Index */}
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm ${
+                    p.received ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    {p.order}
+                  </div>
+
+                  {/* Main Details (Or Edit Form) */}
+                  <div className="flex-1 min-w-[200px]">
+                    {isEditing ? (
+                        <div className="flex flex-col gap-2">
+                             <input 
+                               type="text" 
+                               value={editForm.name} 
+                               onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                               className="font-bold text-slate-900 border border-emerald-300 rounded px-2 py-1 focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                               placeholder="Name"
+                               autoFocus
+                             />
+                             <div className="flex gap-2">
+                                <input 
+                                    type="date"
+                                    value={editForm.date}
+                                    onChange={(e) => setEditForm({...editForm, date: e.target.value})}
+                                    className="text-sm border border-emerald-300 rounded px-2 py-1 focus:ring-2 focus:ring-emerald-500 outline-none bg-white w-full"
+                                />
+                                <div className="relative w-full">
+                                    <span className="absolute left-2 top-1 text-xs text-slate-400 font-bold">$</span>
+                                    <input 
+                                        type="number"
+                                        value={editForm.amount}
+                                        onChange={(e) => setEditForm({...editForm, amount: Number(e.target.value)})}
+                                        className="w-full pl-5 border border-emerald-300 rounded px-2 py-1 focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm"
+                                    />
+                                </div>
+                             </div>
+                        </div>
+                    ) : (
+                        <div onClick={() => !isCompleted && startEditingParticipant(p)} className="cursor-pointer group">
+                             <h3 className={`font-bold text-lg flex items-center gap-2 group-hover:text-emerald-600 transition-colors ${p.received ? 'text-emerald-900 line-through decoration-emerald-500/50' : 'text-slate-900'}`}>
+                                {p.name}
+                                {!p.received && <Pencil size={12} className="opacity-0 group-hover:opacity-100 text-slate-400" />}
+                            </h3>
+                            <div className="flex items-center gap-4 text-sm mt-1">
+                                <div className="flex items-center gap-1 text-slate-500">
+                                    <Calendar size={12} />
+                                    {p.payoutDate ? formatDate(p.payoutDate) : t('detail.date_tbd')}
+                                </div>
+                                <div className={`flex items-center gap-1 font-mono font-medium ${p.customContribution !== undefined && p.customContribution !== xitique.amount ? 'text-amber-600' : 'text-slate-400'}`}>
+                                    <DollarSign size={12} />
+                                    {formatCurrency(p.customContribution !== undefined ? p.customContribution : xitique.amount)}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end">
-                   <button 
-                      onClick={() => handleToggleClick(p.id)}
-                      disabled={isCompleted}
-                      className={`flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition-all ${
-                          p.received 
-                          ? 'bg-emerald-500 text-white shadow-emerald-200 shadow-lg' 
-                          : isCompleted 
-                              ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
-                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                      }`}
-                   >
-                      {p.received ? (
-                          <>
-                            <CheckCircle2 size={18} /> {t('detail.paid_out')}
-                          </>
-                      ) : (
-                          <>
-                            <div className="w-4 h-4 rounded-full border-2 border-slate-400"></div> {t('detail.mark_paid')}
-                          </>
-                      )}
-                   </button>
+                <div className="flex items-center justify-end gap-2 mt-4 md:mt-0 pl-12 md:pl-0">
+                   {isEditing ? (
+                       <>
+                        <button onClick={saveParticipantChanges} className="bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-lg"><Save size={18} /></button>
+                        <button onClick={() => setEditForm(null)} className="bg-slate-200 hover:bg-slate-300 text-slate-600 p-2 rounded-lg"><X size={18} /></button>
+                       </>
+                   ) : (
+                       <button 
+                          onClick={() => handleToggleClick(p.id)}
+                          disabled={isCompleted}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                              p.received 
+                              ? 'bg-emerald-100 text-emerald-700' 
+                              : isCompleted 
+                                  ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                       >
+                          {p.received ? t('detail.paid_out') : t('detail.mark_paid')}
+                       </button>
+                   )}
                 </div>
               </div>
-            ))}
+            )})}
+            
+            {/* Add Member Button */}
+            {!isCompleted && !searchTerm && (
+                <button 
+                    onClick={handleAddMember}
+                    className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center text-slate-400 font-bold hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all gap-2"
+                >
+                    <Plus size={20} /> Add New Member
+                </button>
+            )}
+
+            {processedParticipants.length === 0 && searchTerm && (
+                <div className="text-center py-10 text-slate-400">
+                    <Search size={32} className="mx-auto mb-2 opacity-30" />
+                    <p>No members found matching "{searchTerm}"</p>
+                </div>
+            )}
           </div>
         </div>
       )}
