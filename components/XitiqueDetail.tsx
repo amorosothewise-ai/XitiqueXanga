@@ -6,7 +6,7 @@ import { formatCurrency } from '../services/formatUtils';
 import { analyzeFairness } from '../services/geminiService';
 import { saveXitique } from '../services/storage';
 import { createTransaction, calculateCyclePot } from '../services/financeLogic';
-import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save } from 'lucide-react';
+import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save, Download, ThumbsUp } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import FinancialTip from './FinancialTip';
@@ -110,7 +110,6 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
       if (!canDrag) return;
       setDraggedId(id);
       e.dataTransfer.effectAllowed = 'move';
-      // Hide the drag image ghost if desired, or let default behavior handle it
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -322,6 +321,23 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
     }
   };
 
+  const handleExportCSV = () => {
+      const headers = "Order,Name,Date,Amount,Status\n";
+      const rows = xitique.participants.map(p => 
+        `${p.order},"${p.name}",${p.payoutDate || ''},${p.customContribution || xitique.amount},${p.received ? 'PAID' : 'PENDING'}`
+      ).join("\n");
+      
+      const csvContent = "data:text/csv;charset=utf-8," + headers + rows;
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `${xitique.name.replace(/\s+/g, '_')}_report.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      addToast(t('detail.export_success'), 'success');
+  };
+
   const handleRunAnalysis = async () => {
     setLoadingAi(true);
     addToast('Iniciando análise com Gemini...', 'info');
@@ -340,6 +356,17 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
           xitique.status = XitiqueStatus.RISK; 
       }
       addToast(t('detail.recalc_title') + ': ' + t('common.success'), 'success');
+  };
+
+  const handleApproveRisk = async () => {
+    // Explicitly allow unequal contributions by forcing status to ACTIVE
+    const updatedXitique = { 
+        ...xitique, 
+        status: XitiqueStatus.ACTIVE 
+    };
+    await saveXitique(updatedXitique);
+    xitique.status = XitiqueStatus.ACTIVE;
+    addToast('Risk Approved. Group is Active.', 'success');
   };
 
   const handleToggleClick = (participantId: string) => {
@@ -469,6 +496,9 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
           <ArrowLeft size={20} className="mr-2" /> {t('detail.back')}
         </button>
         <div className="flex gap-2">
+            <button onClick={handleExportCSV} className="bg-white text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-xl flex items-center text-sm font-bold transition-colors border border-slate-200">
+                <Download size={18} className="mr-2" /> {t('detail.export')}
+            </button>
             <button onClick={handleShare} className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-4 py-2 rounded-xl flex items-center text-sm font-bold transition-colors border border-emerald-200">
                 <Share2 size={18} className="mr-2" /> {t('detail.share')}
             </button>
@@ -590,7 +620,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
       </div>
 
       {/* Recalculate Alert */}
-      {hasUnequalContributions && !isCompleted && (
+      {hasUnequalContributions && !isCompleted && xitique.status === XitiqueStatus.RISK && (
           <div className="bg-amber-50 border border-amber-200 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 animate-fade-in">
              <div className="flex items-start gap-4">
                 <div className="bg-amber-100 p-3 rounded-xl text-amber-600">
@@ -601,12 +631,20 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                     <p className="text-sm text-amber-700 leading-relaxed max-w-lg">{t('detail.recalc_desc')}</p>
                 </div>
              </div>
-             <button 
-                onClick={handleRecalculate}
-                className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-amber-200 transition-colors whitespace-nowrap"
-            >
-                {t('detail.recalc_btn')}
-            </button>
+             <div className="flex gap-2">
+                 <button 
+                    onClick={handleApproveRisk}
+                    className="bg-white border border-amber-300 text-amber-700 hover:bg-amber-50 font-bold py-3 px-6 rounded-xl transition-colors whitespace-nowrap flex items-center gap-2"
+                 >
+                    <ThumbsUp size={18} /> {t('detail.approve_risk')}
+                 </button>
+                 <button 
+                    onClick={handleRecalculate}
+                    className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-amber-200 transition-colors whitespace-nowrap"
+                >
+                    {t('detail.recalc_btn')}
+                </button>
+             </div>
           </div>
       )}
 

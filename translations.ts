@@ -15,6 +15,18 @@ export const translations = {
     "nav.mark_read": "Marcar lida",
     "nav.profile": "Meu Perfil",
     
+    // Onboarding
+    "onb.welcome": "Bem-vindo ao Xitique Xanga",
+    "onb.step1_title": "Digitalize seu Xitique",
+    "onb.step1_desc": "Diga adeus ao caderno de papel. Gerencie grupos de poupança com transparência total e histórico imutável.",
+    "onb.step2_title": "Justiça Garantida",
+    "onb.step2_desc": "Nossos algoritmos ajudam a definir ordens de pagamento justas e detectam desequilíbrios nas contribuições.",
+    "onb.step3_title": "Segurança Primeiro",
+    "onb.step3_desc": "Seus dados estão seguros na nuvem. Funciona mesmo se você perder o telefone.",
+    "onb.btn_start": "Começar Jornada",
+    "onb.btn_next": "Próximo",
+    "onb.btn_skip": "Pular",
+
     // Dashboard
     "dash.greeting": "Olá, {name}",
     "dash.subtitle_welcome": "Aqui está o resumo dos seus círculos financeiros.",
@@ -167,11 +179,15 @@ export const translations = {
     "detail.share": "Partilhar (WhatsApp)",
     "detail.share_success": "Lista copiada para o clipboard!",
     "detail.share_fail": "Falha ao copiar.",
+    "detail.export": "Exportar CSV",
+    "detail.export_success": "Relatório baixado.",
     
     // New Recalculation features
     "detail.recalc_title": "Recalcular Valores",
     "detail.recalc_desc": "Contribuições desiguais detectadas. O sistema precisa ajustar o total do pote para garantir integridade.",
     "detail.recalc_btn": "Recalcular",
+    "detail.approve_risk": "Aprovar Risco",
+    "detail.approve_risk_desc": "Aceitar as diferenças e continuar.",
     "detail.risk_alert": "ALERTA DE RISCO",
     "detail.risk_desc": "Os valores de contribuição diferem. Verifique a justiça.",
     "detail.custom_contrib": "Personalizado",
@@ -258,6 +274,18 @@ export const translations = {
     "nav.no_notifications": "No new notifications",
     "nav.mark_read": "Mark read",
     "nav.profile": "My Profile",
+
+    // Onboarding
+    "onb.welcome": "Welcome to Xitique Xanga",
+    "onb.step1_title": "Digitize Your Xitique",
+    "onb.step1_desc": "Say goodbye to paper notebooks. Manage savings groups with full transparency and immutable history.",
+    "onb.step2_title": "Guaranteed Fairness",
+    "onb.step2_desc": "Our algorithms help set fair payout orders and detect contribution imbalances.",
+    "onb.step3_title": "Security First",
+    "onb.step3_desc": "Your data is safe in the cloud. It works even if you lose your phone.",
+    "onb.btn_start": "Start Journey",
+    "onb.btn_next": "Next",
+    "onb.btn_skip": "Skip",
 
     // Dashboard
     "dash.greeting": "Hello, {name}",
@@ -411,11 +439,15 @@ export const translations = {
     "detail.share": "Share (WhatsApp)",
     "detail.share_success": "List copied to clipboard!",
     "detail.share_fail": "Failed to copy.",
+    "detail.export": "Export CSV",
+    "detail.export_success": "Report downloaded.",
 
     // New Recalculation features
     "detail.recalc_title": "Recalculate Values",
     "detail.recalc_desc": "Unequal contributions detected. The system needs to adjust the pot total to ensure integrity.",
     "detail.recalc_btn": "Recalculate",
+    "detail.approve_risk": "Approve Risk",
+    "detail.approve_risk_desc": "Accept differences and continue.",
     "detail.risk_alert": "RISK ALERT",
     "detail.risk_desc": "Contribution amounts differ. Please verify fairness.",
     "detail.custom_contrib": "Custom",

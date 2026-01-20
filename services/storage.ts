@@ -2,9 +2,19 @@
 import { supabase } from './supabase';
 import { Xitique, XitiqueStatus, XitiqueType, UserProfile, Participant, Transaction } from '../types';
 
+// --- Offline Cache Keys ---
+const CACHE_XITIQUES_KEY = 'xitique_data_cache_v1';
+
 // --- Xitique Data (Database) ---
 
 export const getXitiques = async (): Promise<Xitique[]> => {
+  // Offline Strategy: If offline, return cache immediately
+  if (!navigator.onLine) {
+    console.log("Offline mode: Loading Xitiques from local cache.");
+    const cached = localStorage.getItem(CACHE_XITIQUES_KEY);
+    return cached ? JSON.parse(cached) : [];
+  }
+
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) return [];
 
@@ -21,11 +31,13 @@ export const getXitiques = async (): Promise<Xitique[]> => {
 
   if (error) {
     console.error("Error fetching xitiques:", error);
-    return [];
+    // Fallback to cache on error if available
+    const cached = localStorage.getItem(CACHE_XITIQUES_KEY);
+    return cached ? JSON.parse(cached) : [];
   }
 
   // Map Database Snake_case to App CamelCase
-  return data.map((x: any) => ({
+  const mappedData = data.map((x: any) => ({
     id: x.id,
     name: x.name,
     type: x.type as XitiqueType,
@@ -54,6 +66,11 @@ export const getXitiques = async (): Promise<Xitique[]> => {
       referenceId: t.reference_id
     })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
   }));
+
+  // Update Cache
+  localStorage.setItem(CACHE_XITIQUES_KEY, JSON.stringify(mappedData));
+
+  return mappedData;
 };
 
 export const saveXitique = async (xitique: Xitique): Promise<void> => {
@@ -72,7 +89,6 @@ export const saveXitique = async (xitique: Xitique): Promise<void> => {
     status: xitique.status,
     method: xitique.method,
     start_date: xitique.startDate,
-    // created_at is handled by default on insert, ignored on update if not specified
   });
 
   if (xError) throw xError;
@@ -109,7 +125,6 @@ export const saveXitique = async (xitique: Xitique): Promise<void> => {
 };
 
 export const deleteXitique = async (id: string): Promise<void> => {
-  // Soft Delete via Status update
   const { error } = await supabase
     .from('xitiques')
     .update({ status: XitiqueStatus.ARCHIVED })

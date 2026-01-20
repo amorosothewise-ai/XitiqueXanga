@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Wizard from './components/Wizard';
@@ -9,6 +9,7 @@ import ArchitectureInfo from './components/ArchitectureInfo';
 import UserProfile from './components/UserProfile';
 import IndividualDashboard from './components/IndividualDashboard';
 import AuthScreen from './components/AuthScreen';
+import Onboarding from './components/Onboarding';
 import { useAuth } from './contexts/AuthContext';
 import { Xitique } from './types';
 import { deleteXitique } from './services/storage';
@@ -20,9 +21,24 @@ const App: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [selectedXitique, setSelectedXitique] = useState<Xitique | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   
   // State to hold data for renewal wizard
   const [renewalData, setRenewalData] = useState<Xitique | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+        const hasSeen = localStorage.getItem('xitique_onboarding_completed');
+        if (!hasSeen) {
+            setShowOnboarding(true);
+        }
+    }
+  }, [isAuthenticated]);
+
+  const completeOnboarding = () => {
+      localStorage.setItem('xitique_onboarding_completed', 'true');
+      setShowOnboarding(false);
+  };
 
   if (loading) {
     return (
@@ -34,6 +50,10 @@ const App: React.FC = () => {
 
   if (!isAuthenticated) {
     return <AuthScreen />;
+  }
+
+  if (showOnboarding) {
+      return <Onboarding onComplete={completeOnboarding} />;
   }
 
   const handleSelectXitique = (xitique: Xitique) => {
