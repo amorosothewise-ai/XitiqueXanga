@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LayoutDashboard, PlusCircle, Calculator, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank, Globe, ArrowLeft, Hexagon, TrendingUp } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { checkAndGenerateNotifications, markNotificationRead } from '../services/notificationService';
-import { Notification, UserProfile } from '../types';
-import { getUserProfile } from '../services/storage';
+import { Notification } from '../types';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,8 +14,8 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) => {
   const { t, language, setLanguage } = useLanguage();
+  const { user } = useAuth(); // Use live user data from context instead of local state
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [user, setUser] = useState<UserProfile | null>(null);
   const [showNotif, setShowNotif] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -24,8 +24,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
       setNotifications(notifs);
     });
     
-    setUser(getUserProfile());
-
     const handleClickOutside = (event: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
         setShowNotif(false);
@@ -171,8 +169,12 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
         {/* User Footer */}
         <div className="p-4 border-t border-slate-800 bg-slate-900/50 backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-3 p-2 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer" onClick={() => onChangeView('user')}>
-                <div className={`w-9 h-9 rounded-full ${user?.avatarColor || 'bg-gradient-to-br from-indigo-500 to-purple-600'} flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-slate-800`}>
-                    {user?.photoUrl ? <img src={user.photoUrl} className="w-full h-full rounded-full object-cover"/> : (user?.name.charAt(0).toUpperCase() || 'U')}
+                <div className={`w-9 h-9 rounded-full ${user?.avatarColor || 'bg-gradient-to-br from-indigo-500 to-purple-600'} flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-slate-800 overflow-hidden`}>
+                    {user?.photoUrl ? (
+                      <img src={user.photoUrl} className="w-full h-full object-cover" alt="Avatar" />
+                    ) : (
+                      user?.name.charAt(0).toUpperCase() || 'U'
+                    )}
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="text-sm font-bold text-white truncate">{user?.name || 'Guest User'}</div>

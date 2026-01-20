@@ -5,7 +5,7 @@ import { formatCurrency } from '../services/formatUtils';
 import { analyzeFairness } from '../services/geminiService';
 import { saveXitique } from '../services/storage';
 import { createTransaction, calculateCyclePot, calculateDynamicPot } from '../services/financeLogic';
-import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save, Download, ThumbsUp, Hash, XCircle, FileText, Activity, PenTool, PlayCircle, Lock, Coins } from 'lucide-react';
+import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save, Download, ThumbsUp, Hash, XCircle, FileText, Activity, PenTool, PlayCircle, Lock, Unlock, Shuffle, Coins } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import FinancialTip from './FinancialTip';
@@ -50,8 +50,10 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' }>({ key: 'order', direction: 'asc' });
 
-  // Drag & Drop State
+  // Drag & Drop & Shuffle State
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [lockedIds, setLockedIds] = useState<Set<string>>(new Set());
+  const [_, setForceUpdate] = useState(0); // To trigger re-renders on mutation
 
   // Derived State
   // Note: calculateCyclePot is used for general stats, but individual rows use calculateDynamicPot
@@ -127,10 +129,6 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
         case 'name':
           return a.name.localeCompare(b.name) * dir;
         case 'received':
-          // Sort logic: 
-          // If Ascending: Pending (false) first, then Received (true)
-          // If Descending: Received (true) first, then Pending (false)
-          // Number(true) = 1, Number(false) = 0
           return (Number(a.received) - Number(b.received)) * dir;
         case 'payoutDate':
            const dateA = a.payoutDate ? new Date(a.payoutDate).getTime() : 0;
@@ -151,9 +149,61 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
       }));
   };
 
+  const toggleLock = (id: string) => {
+      setLockedIds(prev => {
+          const newSet = new Set(prev);
+          if (newSet.has(id)) newSet.delete(id);
+          else newSet.add(id);
+          return newSet;
+      });
+  };
+
+  const handleShuffle = async () => {
+    if (isCompleted) return;
+
+    // Filter out locked participants
+    const currentParticipants = [...xitique.participants].sort((a, b) => a.order - b.order);
+    const unlocked = currentParticipants.filter(p => !lockedIds.has(p.id));
+
+    if (unlocked.length < 2) {
+        addToast(t('wiz.alert_members') || "Need at least 2 unlocked members to shuffle", "info");
+        return;
+    }
+
+    // Shuffle logic (Fisher-Yates)
+    const shuffledUnlocked = [...unlocked];
+    for (let i = shuffledUnlocked.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledUnlocked[i], shuffledUnlocked[j]] = [shuffledUnlocked[j], shuffledUnlocked[i]];
+    }
+
+    // Reconstruct list preserving locked positions
+    const newParticipants = currentParticipants.map(p => {
+        if (lockedIds.has(p.id)) return p;
+        return shuffledUnlocked.shift()!;
+    });
+
+    // Update Orders and Dates
+    const updatedWithDates = newParticipants.map((p, index) => ({
+        ...p,
+        order: index + 1,
+        payoutDate: addPeriod(xitique.startDate, xitique.frequency, index)
+    }));
+
+    // Save
+    const updatedXitique = { ...xitique, participants: updatedWithDates };
+    await saveXitique(updatedXitique);
+    xitique.participants = updatedWithDates;
+    
+    // Reset sort to see changes
+    setSortConfig({ key: 'order', direction: 'asc' });
+    setForceUpdate(prev => prev + 1);
+    addToast("Order shuffled successfully", "success");
+  };
+
   // Drag Handlers
   const handleDragStart = (e: React.DragEvent, id: string) => {
-      if (!canDrag) return;
+      if (!canDrag || lockedIds.has(id)) return;
       setDraggedId(id);
       e.dataTransfer.effectAllowed = 'move';
   };
@@ -166,6 +216,10 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
   const handleDrop = async (e: React.DragEvent, targetId: string) => {
       e.preventDefault();
       if (!canDrag || !draggedId || draggedId === targetId) return;
+      if (lockedIds.has(targetId) || lockedIds.has(draggedId)) {
+          addToast("Cannot swap locked items", "error");
+          return;
+      }
 
       const items = [...xitique.participants];
       const oldIndex = items.findIndex(i => i.id === draggedId);
@@ -180,7 +234,8 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
       // Reassign order based on new index
       const updatedParticipants = items.map((p, index) => ({
           ...p,
-          order: index + 1
+          order: index + 1,
+          payoutDate: addPeriod(xitique.startDate, xitique.frequency, index)
       }));
 
       // Optimistic update
@@ -191,6 +246,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
       
       addToast('Ordem atualizada', 'success');
       setDraggedId(null);
+      setForceUpdate(prev => prev + 1);
   };
 
   const handleAddMember = async () => {
@@ -224,6 +280,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
       
       startEditingParticipant(newMember);
       addToast('Membro adicionado', 'success');
+      setForceUpdate(prev => prev + 1);
   };
 
   const startEditingParticipant = (p: Participant) => {
@@ -254,9 +311,18 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
       const oldOrder = currentParticipant.order;
 
       if (targetOrder !== oldOrder) {
+          if (lockedIds.has(editForm.id)) {
+              addToast("Cannot change order of locked member", "error");
+              return;
+          }
+          
           const collisionIndex = updatedParticipants.findIndex(p => p.order === targetOrder && p.id !== editForm.id);
           
           if (collisionIndex !== -1) {
+              if (lockedIds.has(updatedParticipants[collisionIndex].id)) {
+                 addToast("Target position is locked", "error");
+                 return;
+              }
               // SWAP: The person currently at targetOrder moves to oldOrder
               updatedParticipants[collisionIndex] = {
                   ...updatedParticipants[collisionIndex],
@@ -307,6 +373,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
       xitique.status = newStatus;
       setEditForm(null);
       addToast('Membro atualizado', 'success');
+      setForceUpdate(prev => prev + 1);
   };
 
   const handleBulkToggle = () => {
@@ -388,6 +455,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
     xitique.status = newStatus;
     
     addToast(targetState ? 'Todos marcados como pagos' : 'Todos revertidos', 'success');
+    setForceUpdate(prev => prev + 1);
   };
 
   const handleShare = async () => {
@@ -585,6 +653,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
     xitique.transactions = updatedTx;
     xitique.status = updatedXitique.status;
     setAiAnalysis(null);
+    setForceUpdate(prev => prev + 1);
     
     addToast(willReceive ? 'Pagamento registrado com sucesso' : 'Pagamento revertido', willReceive ? 'success' : 'info');
   };
@@ -908,6 +977,16 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
              </div>
              
              <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+                 {/* Shuffle Button */}
+                 {!isCompleted && !searchTerm && (
+                     <button 
+                         onClick={handleShuffle}
+                         className="px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1 border bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 transition-colors whitespace-nowrap"
+                         title="Randomly shuffle unlocked participants"
+                     >
+                         <Shuffle size={14} /> Shuffle
+                     </button>
+                 )}
                  <button 
                    onClick={() => handleSort('name')}
                    className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1 border transition-colors whitespace-nowrap ${sortConfig.key === 'name' ? 'bg-slate-50 border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
@@ -942,6 +1021,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
           <div className="grid gap-3">
             {processedParticipants.map((p, idx) => {
               const isEditing = editForm?.id === p.id;
+              const isLocked = lockedIds.has(p.id);
               
               // Dynamic Calculation for UI
               const receivableAmount = calculateDynamicPot(xitique, p);
@@ -950,12 +1030,13 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
               return (
               <div 
                 key={p.id} 
-                draggable={canDrag && !isEditing}
+                draggable={canDrag && !isEditing && !isLocked}
                 onDragStart={(e) => handleDragStart(e, p.id)}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, p.id)}
                 className={`flex flex-col md:flex-row md:items-center justify-between p-4 rounded-2xl border transition-all ${
                   isEditing ? 'bg-indigo-50 border-indigo-200 shadow-lg ring-1 ring-indigo-300 relative z-10' : 
+                  isLocked ? 'bg-rose-50 border-rose-200' :
                   p.received 
                     ? 'bg-slate-50 border-slate-100 opacity-75 hover:opacity-100' 
                     : 'bg-white border-slate-200 hover:border-emerald-300 hover:shadow-md'
@@ -963,9 +1044,20 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
               >
                 <div className="flex items-center gap-4 mb-4 md:mb-0 w-full md:w-auto">
                   {/* Drag Handle */}
-                  <div className={`cursor-grab ${canDrag ? 'text-slate-400 hover:text-emerald-500' : 'text-slate-200 cursor-not-allowed'}`}>
+                  <div className={`cursor-grab ${canDrag && !isLocked ? 'text-slate-400 hover:text-emerald-500' : 'text-slate-200 cursor-not-allowed'}`}>
                      <GripVertical size={20} />
                   </div>
+
+                  {/* Lock Button */}
+                   {!isEditing && !isCompleted && (
+                       <button 
+                          onClick={(e) => { e.stopPropagation(); toggleLock(p.id); }}
+                          className={`p-1 rounded transition-colors ${isLocked ? 'text-rose-500 hover:text-rose-600' : 'text-slate-300 hover:text-slate-500'}`}
+                          title={isLocked ? "Unlock position" : "Lock position"}
+                       >
+                          {isLocked ? <Lock size={16} /> : <Unlock size={16} />}
+                       </button>
+                   )}
 
                   {/* Checkbox Status */}
                   <button 
@@ -1046,7 +1138,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                              </div>
                         </div>
                     ) : (
-                        <div onClick={() => !isCompleted && startEditingParticipant(p)} className="cursor-pointer group">
+                        <div onClick={() => !isCompleted && !isLocked && startEditingParticipant(p)} className={`cursor-pointer group ${isLocked ? 'cursor-default' : ''}`}>
                              <div className="flex items-center gap-2 mb-1">
                                 <h3 className={`font-bold text-lg flex items-center gap-2 group-hover:text-emerald-600 transition-colors ${p.received ? 'text-emerald-900 line-through decoration-emerald-500/50' : 'text-slate-900'}`}>
                                     {p.name}
@@ -1059,7 +1151,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                                         <Coins size={10} /> {formatCurrency(p.customContribution!)}
                                     </div>
                                 )}
-                                {!p.received && <Pencil size={12} className="opacity-0 group-hover:opacity-100 text-slate-400" />}
+                                {!p.received && !isLocked && <Pencil size={12} className="opacity-0 group-hover:opacity-100 text-slate-400" />}
                              </div>
                             <div className="flex items-center gap-4 text-sm pl-0">
                                 <div className="flex items-center gap-1 text-slate-500">

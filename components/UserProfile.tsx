@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Save, Globe, Mail, Phone, Bell, Shield, Key, Clock, Palette, LogOut, Loader2, Camera, FileText, Image as ImageIcon } from 'lucide-react';
+import { User, Save, Globe, Mail, Phone, Bell, Shield, Key, Clock, Palette, LogOut, Loader2, Camera, FileText, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,6 +32,7 @@ const UserProfile: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [imageLoadError, setImageLoadError] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -39,10 +40,14 @@ const UserProfile: React.FC = () => {
       if (user.language && user.language !== language) {
           setLanguage(user.language);
       }
-      // Load logs
       setLogs(getActivityLogs());
     }
   }, [user]);
+
+  // Reset image error when URL changes
+  useEffect(() => {
+    setImageLoadError(false);
+  }, [profile?.photoUrl]);
 
   const handleSaveProfile = async () => {
     if (!profile) return;
@@ -54,10 +59,7 @@ const UserProfile: React.FC = () => {
         language: profile.language,
         photoUrl: profile.photoUrl
       });
-      
-      // Update Language Context
       setLanguage(profile.language);
-      
       addToast(t('profile.saved'), 'success');
     } catch (error) {
       console.error(error);
@@ -92,9 +94,7 @@ const UserProfile: React.FC = () => {
     
     setIsSaving(true);
     try {
-        // MOCK IMPLEMENTATION
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
         addToast(t('profile.pass_updated'), 'success');
         setPasswordModalOpen(false);
         setCurrentPass('');
@@ -130,8 +130,7 @@ const UserProfile: React.FC = () => {
       if (e.target.files && e.target.files.length > 0) {
           const file = e.target.files[0];
           
-          // Basic validation
-          if (file.size > 5 * 1024 * 1024) { // 5MB
+          if (file.size > 5 * 1024 * 1024) { 
               addToast("Image is too large (max 5MB)", 'error');
               return;
           }
@@ -142,30 +141,32 @@ const UserProfile: React.FC = () => {
           };
           reader.readAsDataURL(file);
       }
-      // Reset input so same file can be selected again if needed
       if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleCropComplete = async (blob: Blob) => {
       if (!profile) return;
       
-      setSelectedImageSrc(null); // Close modal
+      setSelectedImageSrc(null); 
       setIsUploading(true);
+      setImageLoadError(false); // Reset error state in anticipation
       
       try {
-          // 1. Upload to Supabase
           const publicUrl = await uploadAvatar(profile.id, blob);
           
-          // 2. Update local state
+          // Optimistic update
           setProfile(prev => prev ? ({ ...prev, photoUrl: publicUrl }) : null);
           
-          // 3. Persist to DB immediately
+          // Persist
           await updateUserProfileData(profile.id, { photoUrl: publicUrl });
           
           addToast('Avatar updated successfully', 'success');
       } catch (error: any) {
           console.error(error);
-          addToast(error.message || 'Failed to upload image', 'error');
+          const msg = error.message?.includes('Permission') 
+            ? 'Permission denied. Check Supabase Bucket Policies.' 
+            : 'Failed to upload image';
+          addToast(msg, 'error');
       } finally {
           setIsUploading(false);
       }
@@ -196,22 +197,27 @@ const UserProfile: React.FC = () => {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row items-center gap-6 bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
             <div className="relative group">
-                <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-bold overflow-hidden ${!profile.photoUrl ? 'bg-emerald-500' : ''} shadow-lg relative`}>
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-bold overflow-hidden ${!profile.photoUrl || imageLoadError ? 'bg-emerald-500' : 'bg-slate-100'} shadow-lg relative`}>
                     {isUploading ? (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
                             <Loader2 className="animate-spin text-white" />
                         </div>
                     ) : null}
                     
-                    {profile.photoUrl ? (
-                        <img src={profile.photoUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    {profile.photoUrl && !imageLoadError ? (
+                        <img 
+                            src={profile.photoUrl} 
+                            alt="Avatar" 
+                            className="w-full h-full object-cover" 
+                            onError={() => setImageLoadError(true)}
+                        />
                     ) : (
                         profile.name.charAt(0).toUpperCase() || 'U'
                     )}
                 </div>
                 <button 
                     onClick={() => !isUploading && fileInputRef.current?.click()}
-                    className="absolute -bottom-2 -right-2 bg-white p-2 rounded-full shadow border border-slate-100 cursor-pointer hover:bg-slate-50 text-slate-500 hover:text-emerald-600 transition-colors"
+                    className="absolute -bottom-2 -right-2 bg-white p-2 rounded-full shadow border border-slate-100 cursor-pointer hover:bg-slate-50 text-slate-500 hover:text-emerald-600 transition-colors z-10"
                     title="Change Photo"
                 >
                     <Camera size={16} />
@@ -221,6 +227,11 @@ const UserProfile: React.FC = () => {
             <div className="text-center md:text-left flex-1">
                 <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{profile.name || t('profile.title')}</h1>
                 <p className="text-slate-500">{profile.email}</p>
+                {imageLoadError && (
+                    <div className="flex items-center justify-center md:justify-start gap-1 mt-1 text-amber-500 text-xs font-medium">
+                        <AlertCircle size={12} /> Image load failed (Check Bucket Policy)
+                    </div>
+                )}
                 <div className="flex items-center justify-center md:justify-start gap-2 mt-2 text-xs font-semibold text-slate-400 uppercase tracking-wide">
                     <Clock size={12} />
                     {t('profile.last_login')} {new Date(profile.lastLogin || Date.now()).toLocaleDateString()}
