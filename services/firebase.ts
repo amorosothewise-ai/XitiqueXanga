@@ -1,3 +1,2 @@
-
-// Firebase service removed.
-export const auth = null;
+// This file is deprecated. The application now uses Supabase (services/supabase.ts).
+// You can safely delete this file.

@@ -200,23 +200,25 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
         </div>
       </nav>
 
-      {/* Mobile Bottom Nav - Fixed for easy reach */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 z-40 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <div className="flex justify-around items-center p-2">
-           <MobileNavBtn active={activeView === 'dashboard' || activeView === 'detail'} onClick={() => onChangeView('dashboard')} icon={<LayoutDashboard size={24} />} />
-           <MobileNavBtn active={activeView === 'individual'} onClick={() => onChangeView('individual')} icon={<PiggyBank size={24} />} />
-           <div className="relative -top-6">
-              <button 
-                onClick={() => onChangeView('create')}
-                className="bg-gradient-to-r from-emerald-500 to-cyan-600 text-white p-4 rounded-full shadow-xl shadow-emerald-200 hover:scale-105 transition-transform"
-              >
-                  <PlusCircle size={28} />
-              </button>
-           </div>
-           <MobileNavBtn active={activeView === 'simulation'} onClick={() => onChangeView('simulation')} icon={<Calculator size={24} />} />
-           <MobileNavBtn active={activeView === 'user'} onClick={() => onChangeView('user')} icon={<Settings size={24} />} />
+      {/* Mobile Bottom Nav - Hidden when in 'create' view */}
+      {activeView !== 'create' && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 z-40 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <div className="flex justify-around items-center p-2">
+            <MobileNavBtn active={activeView === 'dashboard' || activeView === 'detail'} onClick={() => onChangeView('dashboard')} icon={<LayoutDashboard size={24} />} />
+            <MobileNavBtn active={activeView === 'individual'} onClick={() => onChangeView('individual')} icon={<PiggyBank size={24} />} />
+            <div className="relative -top-6">
+                <button 
+                    onClick={() => onChangeView('create')}
+                    className="bg-gradient-to-r from-emerald-500 to-cyan-600 text-white p-4 rounded-full shadow-xl shadow-emerald-200 hover:scale-105 transition-transform"
+                >
+                    <PlusCircle size={28} />
+                </button>
+            </div>
+            <MobileNavBtn active={activeView === 'simulation'} onClick={() => onChangeView('simulation')} icon={<Calculator size={24} />} />
+            <MobileNavBtn active={activeView === 'user'} onClick={() => onChangeView('user')} icon={<Settings size={24} />} />
+            </div>
         </div>
-      </div>
+      )}
 
       {/* Notifications Overlay */}
       {showNotif && (
