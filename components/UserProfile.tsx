@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Save, Globe, Mail, Phone, Bell, Shield, Key, Clock, Palette, LogOut, Loader2, Camera, FileText, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { User, Save, Globe, Mail, Bell, Shield, Key, Clock, LogOut, Loader2, Camera, FileText, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
