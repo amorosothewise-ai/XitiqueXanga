@@ -6,7 +6,7 @@ import { formatCurrency } from '../services/formatUtils';
 import { analyzeFairness } from '../services/geminiService';
 import { saveXitique } from '../services/storage';
 import { createTransaction, calculateCyclePot } from '../services/financeLogic';
-import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save, Download, ThumbsUp } from 'lucide-react';
+import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save, Download, ThumbsUp, Hash, XCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import FinancialTip from './FinancialTip';
@@ -31,6 +31,10 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
   // Edit State (Global)
   const [isEditingBase, setIsEditingBase] = useState(false);
   const [newBaseAmount, setNewBaseAmount] = useState(xitique.amount);
+  
+  // Edit Name State
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState(xitique.name);
 
   // Edit State (Individual Participant)
   const [editForm, setEditForm] = useState<{
@@ -38,6 +42,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
       name: string;
       date: string;
       amount: number;
+      order: number;
   } | null>(null);
 
   // Search & Sort State
@@ -71,13 +76,17 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
 
   useEffect(() => {
     setNewBaseAmount(xitique.amount);
-  }, [xitique.amount]);
+    setNewName(xitique.name);
+  }, [xitique.amount, xitique.name]);
 
   // --- Logic ---
 
   // Filter & Sort Logic
   const processedParticipants = [...xitique.participants]
-    .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(p => {
+        if (!searchTerm) return true;
+        return p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    })
     .sort((a, b) => {
       const dir = sortConfig.direction === 'asc' ? 1 : -1;
       
@@ -85,7 +94,9 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
         case 'name':
           return a.name.localeCompare(b.name) * dir;
         case 'received':
-          return (Number(a.received) - Number(b.received)) * dir;
+          // Sort by boolean status
+          if (a.received === b.received) return 0;
+          return a.received ? dir : -dir;
         case 'payoutDate':
            const dateA = a.payoutDate ? new Date(a.payoutDate).getTime() : 0;
            const dateB = b.payoutDate ? new Date(b.payoutDate).getTime() : 0;
@@ -185,12 +196,33 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
           id: p.id,
           name: p.name,
           date: p.payoutDate ? new Date(p.payoutDate).toISOString().split('T')[0] : '',
-          amount: p.customContribution !== undefined ? p.customContribution : xitique.amount
+          amount: p.customContribution !== undefined ? p.customContribution : xitique.amount,
+          order: p.order
       });
   };
 
   const saveParticipantChanges = async () => {
       if (!editForm) return;
+
+      // --- Validation: Unique and Sequential Order ---
+      // Get all orders EXCEPT the one being edited, then add the new one proposed
+      const otherOrders = xitique.participants
+          .filter(p => p.id !== editForm.id)
+          .map(p => p.order);
+      
+      const allOrders = [...otherOrders, editForm.order].sort((a, b) => a - b);
+
+      // Check for duplicates
+      const hasDuplicates = new Set(allOrders).size !== allOrders.length;
+      
+      // Check for sequential (1 to N)
+      const isSequential = allOrders.every((val, index) => val === index + 1);
+
+      if (hasDuplicates || !isSequential) {
+          addToast(t('common.error') + ": Ordem inválida. Deve ser sequencial (1, 2, 3...) e única.", 'error');
+          return;
+      }
+      // -----------------------------------------------
 
       const updatedParticipants = xitique.participants.map(p => {
           if (p.id === editForm.id) {
@@ -198,11 +230,12 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                   ...p, 
                   name: editForm.name,
                   payoutDate: editForm.date ? new Date(editForm.date).toISOString() : undefined,
-                  customContribution: editForm.amount 
+                  customContribution: editForm.amount,
+                  order: editForm.order
               };
           }
           return p;
-      });
+      }).sort((a, b) => a.order - b.order); // Re-sort list based on new orders if order changed
 
       const isRisk = updatedParticipants.some(p => {
          const val = p.customContribution !== undefined ? p.customContribution : xitique.amount;
@@ -225,6 +258,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
   };
 
   const handleBulkToggle = () => {
+    // Safety check for completed groups to prevent accidental mass reversals if everything is already done
     if (isCompleted && xitique.participants.every(p => p.received)) {
          setConfirmModal({
             isOpen: true,
@@ -463,6 +497,15 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
     addToast('Contribuição base atualizada', 'success');
   };
 
+  const saveNameChanges = async () => {
+      if (!newName.trim()) return;
+      const updatedXitique = { ...xitique, name: newName };
+      await saveXitique(updatedXitique);
+      xitique.name = newName;
+      setIsEditingName(false);
+      addToast('Nome atualizado', 'success');
+  };
+
   const requestDelete = () => {
       setConfirmModal({
           isOpen: true,
@@ -555,7 +598,30 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                     </span>
                 )}
             </div>
-            <h1 className="text-4xl font-bold mb-6 tracking-tight">{xitique.name}</h1>
+            
+            {/* Editable Name */}
+            {isEditingName ? (
+                <div className="flex items-center gap-2 mb-6">
+                    <input 
+                        type="text" 
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        className="bg-transparent border-b-2 border-emerald-400 text-4xl font-bold text-white focus:outline-none w-full"
+                        autoFocus
+                    />
+                    <button onClick={saveNameChanges} className="bg-emerald-500 p-2 rounded-lg text-slate-900 hover:bg-emerald-400"><Check size={20} /></button>
+                    <button onClick={() => { setIsEditingName(false); setNewName(xitique.name); }} className="bg-white/10 p-2 rounded-lg text-white hover:bg-white/20"><X size={20} /></button>
+                </div>
+            ) : (
+                <h1 className="text-4xl font-bold mb-6 tracking-tight flex items-center gap-3 group">
+                    {xitique.name}
+                    {!isCompleted && (
+                        <button onClick={() => setIsEditingName(true)} className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-white p-1">
+                            <Pencil size={20} />
+                        </button>
+                    )}
+                </h1>
+            )}
             
             <div className="mb-8">
                <div className="flex justify-between text-xs font-medium text-slate-400 mb-2">
@@ -564,7 +630,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                </div>
                <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
                    <div 
-                      className={`h-3 rounded-full transition-all duration-1000 ease-out ${isCompleted ? 'bg-indigo-500' : 'bg-gradient-to-r from-emerald-500 to-emerald-300'}`}
+                      className={`h-3 rounded-full transition-all duration-1000 ease-out ${isCompleted ? 'bg-indigo-500' : 'bg-gradient-to-r from-emerald-500 to-cyan-500'}`}
                       style={{ width: `${progressPercentage}%` }}
                    ></div>
                </div>
@@ -709,34 +775,39 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
         <div className="space-y-4">
           
           {/* Controls: Search, Filter, Sort, Bulk Actions */}
-          <div className="flex flex-col md:flex-row gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+          <div className="flex flex-col md:flex-row gap-3 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
              <div className="flex-1 relative">
                  <Search className="absolute left-3 top-3 text-slate-400" size={18} />
                  <input 
                    type="text" 
                    placeholder="Search member..." 
-                   className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
+                   className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium transition-all"
                    value={searchTerm}
                    onChange={(e) => setSearchTerm(e.target.value)}
                  />
+                 {searchTerm && (
+                     <button onClick={() => setSearchTerm('')} className="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
+                         <XCircle size={18} />
+                     </button>
+                 )}
              </div>
              
-             <div className="flex gap-2">
+             <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
                  <button 
                    onClick={() => handleSort('name')}
-                   className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1 border transition-colors ${sortConfig.key === 'name' ? 'bg-white border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                   className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1 border transition-colors whitespace-nowrap ${sortConfig.key === 'name' ? 'bg-slate-50 border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                  >
                     <ArrowUpDown size={14} /> Name
                  </button>
                  <button 
                    onClick={() => handleSort('payoutDate')}
-                   className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1 border transition-colors ${sortConfig.key === 'payoutDate' ? 'bg-white border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                   className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1 border transition-colors whitespace-nowrap ${sortConfig.key === 'payoutDate' ? 'bg-slate-50 border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                  >
                     <Calendar size={14} /> Date
                  </button>
                   <button 
                    onClick={() => handleSort('received')}
-                   className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1 border transition-colors ${sortConfig.key === 'received' ? 'bg-white border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                   className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1 border transition-colors whitespace-nowrap ${sortConfig.key === 'received' ? 'bg-slate-50 border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                  >
                     <Filter size={14} /> Status
                  </button>
@@ -746,7 +817,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
 
              <button 
                 onClick={handleBulkToggle}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-bold flex items-center gap-2 transition-colors whitespace-nowrap"
              >
                 {xitique.participants.every(p => p.received) ? <CheckSquare size={16} /> : <Square size={16} />}
                 Select All
@@ -768,7 +839,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                   isEditing ? 'bg-emerald-50 border-emerald-200 shadow-md ring-1 ring-emerald-300' : 
                   p.received 
                     ? 'bg-slate-50 border-slate-100 opacity-75 hover:opacity-100' 
-                    : 'bg-white border-slate-200 hover:border-emerald-200 shadow-sm'
+                    : 'bg-white border-slate-200 hover:border-emerald-300 hover:shadow-md'
                 }`}
               >
                 <div className="flex items-center gap-4 mb-4 md:mb-0 w-full md:w-auto">
@@ -797,18 +868,31 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                   <div className="flex-1 min-w-[200px]">
                     {isEditing ? (
                         <div className="flex flex-col gap-2">
-                             <input 
-                               type="text" 
-                               value={editForm.name} 
-                               onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                               className="font-bold text-slate-900 border border-emerald-300 rounded px-2 py-1 focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
-                               placeholder="Name"
-                               autoFocus
-                             />
                              <div className="flex gap-2">
                                 <input 
-                                    type="date"
-                                    value={editForm.date}
+                                  type="text" 
+                                  value={editForm.name} 
+                                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                                  className="flex-1 font-bold text-slate-900 border border-emerald-300 rounded px-2 py-1 focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                                  placeholder="Name"
+                                  autoFocus
+                                />
+                                <div className="relative w-20">
+                                   <Hash size={12} className="absolute left-2 top-2 text-slate-400"/>
+                                   <input 
+                                     type="number" 
+                                     value={editForm.order} 
+                                     onChange={(e) => setEditForm({...editForm, order: Number(e.target.value)})}
+                                     className="w-full pl-6 border border-emerald-300 rounded px-2 py-1 focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm font-bold"
+                                     title="Order Position"
+                                   />
+                                </div>
+                             </div>
+
+                             <div className="flex gap-2">
+                                <input 
+                                    type="date" 
+                                    value={editForm.date} 
                                     onChange={(e) => setEditForm({...editForm, date: e.target.value})}
                                     className="text-sm border border-emerald-300 rounded px-2 py-1 focus:ring-2 focus:ring-emerald-500 outline-none bg-white w-full"
                                 />

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { resendVerification } from '../services/authService';
-import { Lock, Mail, User, ArrowRight, Loader2, Chrome, AlertCircle, Send } from 'lucide-react';
+import { Lock, Mail, User, ArrowRight, Loader2, Chrome, AlertCircle, Send, Hexagon, TrendingUp } from 'lucide-react';
 
 const AuthScreen: React.FC = () => {
   const { login, loginWithGoogle, register } = useAuth();
@@ -80,11 +80,14 @@ const AuthScreen: React.FC = () => {
       {/* Left: Brand / Hero */}
       <div className="md:w-1/2 bg-slate-900 text-white p-8 md:p-16 flex flex-col justify-between relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -ml-20 -mb-20"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -ml-20 -mb-20"></div>
         
         <div className="relative z-10">
-          <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm mb-6 shadow-xl border border-white/10">
-            <img src="https://cdn-icons-png.flaticon.com/512/951/951971.png" alt="Logo" className="w-10 h-10" />
+          <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-cyan-600 rounded-2xl flex items-center justify-center mb-6 shadow-xl shadow-emerald-900/30">
+             <div className="relative flex items-center justify-center">
+                <Hexagon size={40} className="text-white fill-emerald-500/20" strokeWidth={2.5} />
+                <TrendingUp size={24} className="absolute text-white font-bold" />
+             </div>
           </div>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4">
             Xitique <span className="text-emerald-400">Xanga</span>

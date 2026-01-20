@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, PlusCircle, Calculator, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Calculator, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank, Globe, ArrowLeft, Hexagon, TrendingUp } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { checkAndGenerateNotifications, markNotificationRead } from '../services/notificationService';
 import { Notification, UserProfile } from '../types';
@@ -20,7 +20,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Make async call
     checkAndGenerateNotifications().then(notifs => {
       setNotifications(notifs);
     });
@@ -47,38 +46,68 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
     setLanguage(language === 'pt' ? 'en' : 'pt');
   };
 
+  // Handle Mobile Back Navigation
+  const handleMobileBack = () => {
+      if (activeView !== 'dashboard') {
+          onChangeView('dashboard');
+      }
+  };
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  return (
-    <div className="min-h-screen flex flex-col md:flex-row font-sans text-slate-900">
-      
-      {/* Mobile Header */}
-      <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-slate-200 p-4 flex justify-between items-center sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg overflow-hidden shadow-sm">
-               <img src="https://cdn-icons-png.flaticon.com/512/951/951971.png" alt="Xitique Xanga" className="w-full h-full object-cover" />
+  // Logo Component
+  const BrandLogo = ({ size = 'normal' }: { size?: 'normal' | 'small' }) => (
+    <div className={`flex items-center gap-2 ${size === 'small' ? 'scale-90' : ''}`}>
+        <div className="relative flex items-center justify-center">
+            <div className="bg-gradient-to-br from-emerald-400 to-cyan-600 rounded-lg p-1.5 shadow-lg shadow-emerald-500/20">
+                <Hexagon size={size === 'small' ? 20 : 24} className="text-white fill-emerald-500/20" strokeWidth={2.5} />
             </div>
-            <h1 className="text-lg font-bold tracking-tight text-slate-800">{t('app.name')}</h1>
+            <TrendingUp size={size === 'small' ? 12 : 14} className="absolute text-white font-bold" />
+        </div>
+        <div>
+            <h1 className={`font-extrabold tracking-tight text-white leading-none ${size === 'small' ? 'text-lg' : 'text-xl'}`}>
+                Xitique <span className="text-emerald-400">Xanga</span>
+            </h1>
+        </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen flex flex-col md:flex-row font-sans text-slate-900 bg-slate-50">
+      
+      {/* Mobile Header - Sticky */}
+      <div className="md:hidden bg-slate-900/95 backdrop-blur-md border-b border-slate-800 p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
+        <div className="flex items-center gap-3">
+            {activeView !== 'dashboard' ? (
+                <button 
+                    onClick={handleMobileBack} 
+                    className="p-2 -ml-2 text-slate-300 hover:text-white rounded-full transition-colors"
+                >
+                    <ArrowLeft size={24} />
+                </button>
+            ) : (
+                <div className="w-2" /> // Spacer
+            )}
+            
+            <BrandLogo size="small" />
         </div>
         <div className="flex items-center gap-2">
-             <button onClick={() => setShowNotif(!showNotif)} className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+             <button onClick={toggleLanguage} className="p-2 text-slate-400 hover:bg-slate-800 hover:text-white rounded-full transition-colors font-bold text-xs flex items-center justify-center w-8 h-8 border border-slate-700">
+                {language.toUpperCase()}
+             </button>
+             <button onClick={() => setShowNotif(!showNotif)} className="relative p-2 text-slate-400 hover:bg-slate-800 hover:text-white rounded-full transition-colors">
                 <Bell size={20} />
-                {unreadCount > 0 && <span className="absolute top-1 right-2 bg-rose-500 w-2 h-2 rounded-full border border-white"></span>}
+                {unreadCount > 0 && <span className="absolute top-1.5 right-2.5 bg-cyan-500 w-2 h-2 rounded-full ring-2 ring-slate-900"></span>}
              </button>
         </div>
       </div>
 
       {/* Sidebar Desktop */}
-      <nav className="hidden md:flex flex-col w-72 bg-slate-900 text-slate-300 h-screen fixed left-0 top-0 border-r border-slate-800 z-40">
+      <nav className="hidden md:flex flex-col w-72 bg-slate-950 text-slate-300 h-screen fixed left-0 top-0 border-r border-slate-800 z-40 shadow-2xl">
         <div className="p-8">
-          <div className="flex items-center gap-3 mb-2">
-             <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg shadow-emerald-900/50 bg-white">
-                <img src="https://cdn-icons-png.flaticon.com/512/951/951971.png" alt="Logo" className="w-full h-full object-cover" />
-             </div>
-             <div>
-                <h1 className="text-xl font-bold text-white tracking-tight leading-none">{t('app.name')}</h1>
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Premium</span>
-             </div>
+          <BrandLogo />
+          <div className="mt-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-11">
+              Smart Rotation System
           </div>
         </div>
 
@@ -88,7 +117,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
               <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 px-4">Finance</div>
               <div className="space-y-1">
                 <NavButton 
-                    active={activeView === 'dashboard'} 
+                    active={activeView === 'dashboard' || activeView === 'detail'} 
                     onClick={() => onChangeView('dashboard')} 
                     icon={<LayoutDashboard size={20} />} 
                     label={t('nav.dashboard')} 
@@ -128,12 +157,12 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
            </div>
            
            {/* CTA */}
-           <div className="px-2">
+           <div className="px-2 pt-4">
                <button 
                   onClick={() => onChangeView('create')}
-                  className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white p-3 rounded-xl font-bold shadow-lg shadow-emerald-900/20 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white p-3.5 rounded-xl font-bold shadow-lg shadow-emerald-900/20 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 group"
                >
-                   <PlusCircle size={20} />
+                   <PlusCircle size={20} className="group-hover:rotate-90 transition-transform"/>
                    <span>{t('nav.create')}</span>
                </button>
            </div>
@@ -142,8 +171,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
         {/* User Footer */}
         <div className="p-4 border-t border-slate-800 bg-slate-900/50 backdrop-blur-sm">
             <div className="flex items-center gap-3 mb-3 p-2 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer" onClick={() => onChangeView('user')}>
-                <div className={`w-9 h-9 rounded-full ${user?.avatarColor || 'bg-emerald-500'} flex items-center justify-center text-white font-bold text-sm shadow-md`}>
-                    {user?.name.charAt(0).toUpperCase() || 'U'}
+                <div className={`w-9 h-9 rounded-full ${user?.avatarColor || 'bg-gradient-to-br from-indigo-500 to-purple-600'} flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-slate-800`}>
+                    {user?.photoUrl ? <img src={user.photoUrl} className="w-full h-full rounded-full object-cover"/> : (user?.name.charAt(0).toUpperCase() || 'U')}
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="text-sm font-bold text-white truncate">{user?.name || 'Guest User'}</div>
@@ -159,7 +188,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
                     title={t('nav.notifications')}
                 >
                     <Bell size={16} />
-                    {unreadCount > 0 && <span className="absolute top-2 right-3 w-2 h-2 bg-rose-500 rounded-full"></span>}
+                    {unreadCount > 0 && <span className="absolute top-2 right-3 w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span>}
                 </button>
                 <button 
                     onClick={toggleLanguage}
@@ -171,17 +200,17 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
         </div>
       </nav>
 
-      {/* Mobile Bottom Nav */}
-      <div className="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 z-40 pb-safe">
+      {/* Mobile Bottom Nav - Fixed for easy reach */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 z-40 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex justify-around items-center p-2">
-           <MobileNavBtn active={activeView === 'dashboard'} onClick={() => onChangeView('dashboard')} icon={<LayoutDashboard size={24} />} />
+           <MobileNavBtn active={activeView === 'dashboard' || activeView === 'detail'} onClick={() => onChangeView('dashboard')} icon={<LayoutDashboard size={24} />} />
            <MobileNavBtn active={activeView === 'individual'} onClick={() => onChangeView('individual')} icon={<PiggyBank size={24} />} />
-           <div className="relative -top-5">
+           <div className="relative -top-6">
               <button 
                 onClick={() => onChangeView('create')}
-                className="bg-gradient-to-r from-teal-500 to-emerald-600 text-white p-4 rounded-full shadow-lg shadow-emerald-200"
+                className="bg-gradient-to-r from-emerald-500 to-cyan-600 text-white p-4 rounded-full shadow-xl shadow-emerald-200 hover:scale-105 transition-transform"
               >
-                  <PlusCircle size={24} />
+                  <PlusCircle size={28} />
               </button>
            </div>
            <MobileNavBtn active={activeView === 'simulation'} onClick={() => onChangeView('simulation')} icon={<Calculator size={24} />} />
@@ -215,9 +244,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
           </div>
       )}
 
-      {/* Main Content Area */}
-      <main className="flex-1 md:ml-72 p-4 md:p-8 mb-20 md:mb-0 pb-24 md:pb-8 overflow-y-auto min-h-screen">
-        <div className="max-w-6xl mx-auto">
+      {/* Main Content Area - Native Scrolling enabled via min-h-screen */}
+      <main className="flex-1 md:ml-72 w-full min-h-screen pb-24 md:pb-12 bg-slate-50">
+        <div className="p-4 md:p-8 max-w-6xl mx-auto">
           {children}
         </div>
       </main>
@@ -231,20 +260,20 @@ const NavButton: React.FC<{active: boolean, onClick: () => void, icon: React.Rea
 }) => (
     <button
     onClick={onClick}
-    className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden ${
+    className={`w-full flex items-center px-4 py-3.5 rounded-xl transition-all duration-200 group relative overflow-hidden ${
       active
         ? 'bg-emerald-500/10 text-emerald-400 font-semibold'
-        : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+        : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
     }`}
   >
-    {active && <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-r-full"></div>}
+    {active && <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-r-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>}
     <span className={`mr-3 transition-colors ${active ? 'text-emerald-400' : 'text-slate-500 group-hover:text-slate-300'}`}>{icon}</span>
-    <span className="text-sm">{label}</span>
+    <span className="text-sm font-medium">{label}</span>
   </button>
 );
 
 const MobileNavBtn: React.FC<{active: boolean, onClick: () => void, icon: React.ReactNode}> = ({ active, onClick, icon }) => (
-    <button onClick={onClick} className={`p-3 rounded-xl transition-colors ${active ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400'}`}>
+    <button onClick={onClick} className={`p-3 rounded-2xl transition-all ${active ? 'text-emerald-600 bg-emerald-50 scale-110 shadow-sm' : 'text-slate-400 active:scale-95'}`}>
         {icon}
     </button>
 );
