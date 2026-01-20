@@ -455,18 +455,19 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                 </p>
 
                 {/* Header for table if variable - Desktop Only */}
-                {contributionMode === ContributionMode.VARIABLE && (
-                    <div className="hidden md:flex gap-4 px-2 mb-2 text-xs font-bold text-slate-400 uppercase">
-                        <span className="w-10 text-center">#</span>
-                        <span className="flex-1">{t('wiz.col_name')}</span>
-                        <span className="w-32">{t('wiz.col_amount')}</span>
-                        <span className="w-10"></span>
-                    </div>
-                )}
+                <div className="hidden md:flex gap-4 px-2 mb-2 text-xs font-bold text-slate-400 uppercase">
+                    <span className="w-10 text-center">#</span>
+                    <span className="flex-1">{t('wiz.col_name')}</span>
+                    {contributionMode === ContributionMode.VARIABLE && <span className="w-32">{t('wiz.col_amount')}</span>}
+                    <span className="w-32">{t('wiz.est_date')}</span>
+                    <span className="w-10"></span>
+                </div>
                 
                 {/* List Container */}
                 <div className="space-y-4">
-                {participantsData.map((p, idx) => (
+                {participantsData.map((p, idx) => {
+                    const projectedDate = addPeriod(startDate, frequency, idx);
+                    return (
                     // CARD LAYOUT for Mobile, Row for Desktop
                     <div key={idx} className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 animate-fade-in bg-slate-50 md:bg-white p-4 md:p-0 rounded-xl border border-slate-200 md:border-0 shadow-sm md:shadow-none">
                         
@@ -491,13 +492,20 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                         </span>
 
                         {/* Name Input */}
-                        <input
-                            type="text"
-                            placeholder={t('wiz.placeholder_member')}
-                            value={p.name}
-                            onChange={(e) => handleNameChange(idx, e.target.value)}
-                            className="flex-1 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all w-full"
-                        />
+                        <div className="flex-1 flex flex-col gap-1 w-full">
+                            <input
+                                type="text"
+                                placeholder={t('wiz.placeholder_member')}
+                                value={p.name}
+                                onChange={(e) => handleNameChange(idx, e.target.value)}
+                                className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                            />
+                             {/* Mobile Estimated Date */}
+                            <div className="md:hidden text-xs text-slate-400 mt-1 flex items-center gap-1">
+                                <Calendar size={10} /> 
+                                {t('wiz.est_date')}: <span className="text-slate-600 font-bold">{formatDate(projectedDate)}</span>
+                            </div>
+                        </div>
                         
                         {/* Variable Amount Input */}
                         {contributionMode === ContributionMode.VARIABLE && (
@@ -512,6 +520,12 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                                 />
                              </div>
                         )}
+
+                        {/* Desktop Estimated Date */}
+                        <div className="hidden md:flex w-32 items-center text-sm font-semibold text-slate-500 bg-slate-50 px-3 py-3 rounded-xl border border-slate-100">
+                           <Calendar size={14} className="mr-2 text-slate-400" />
+                           {formatDate(projectedDate)}
+                        </div>
                         
                         {/* Desktop Delete Button */}
                         {participantsData.length > 2 && (
@@ -520,7 +534,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                             </button>
                         )}
                     </div>
-                ))}
+                )})}
                 
                 {/* Dummy ref to scroll to */}
                 <div ref={listEndRef} />
@@ -595,7 +609,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                                                     </span>
                                                 )}
                                                 {/* Mobile Date display */}
-                                                <div className="md:hidden flex items-center text-xs font-semibold text-slate-400 mt-1">
+                                                <div className="md:hidden flex items-center text-xs font-semibold text-slate-500 mt-1 bg-slate-50 px-2 py-1 rounded inline-flex">
                                                     <Calendar size={10} className="mr-1" />
                                                     {formatDate(calculatedDate)}
                                                 </div>
@@ -604,7 +618,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                                         
                                         {/* Desktop Date Display */}
                                         <div className={`hidden md:flex items-center text-sm font-semibold px-3 py-1.5 rounded-lg ${isLocked ? 'bg-rose-200 text-rose-800' : 'bg-emerald-50 text-emerald-700'}`}>
-                                            <Calendar size={14} className="mr-2" />
+                                            <span className="text-xs font-normal opacity-70 mr-1">Receives:</span>
+                                            <Calendar size={14} className="mr-1" />
                                             {formatDate(calculatedDate)}
                                         </div>
                                     </div>

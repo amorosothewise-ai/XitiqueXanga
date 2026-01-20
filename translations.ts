@@ -134,6 +134,7 @@ export const translations = {
     "wiz.add_member_desc": "Adicione todos que vão participar. Definiremos a ordem a seguir.",
     "wiz.placeholder_member": "Nome do Membro",
     "wiz.btn_add_member": "Adicionar Membro",
+    "wiz.est_date": "Data Prevista",
     "wiz.algo_title": "O Algoritmo de Justiça",
     "wiz.algo_desc": "Defina a ordem de rotação. Trave meses para necessidades específicas.",
     "wiz.lock": "Travar posição",
@@ -223,9 +224,9 @@ export const translations = {
     "detail.export_success": "Relatório baixado.",
     
     // New Recalculation features
-    "detail.recalc_title": "Recalcular Valores",
+    "detail.recalc_title": "Recalculate Values",
     "detail.recalc_desc": "Contribuições desiguais detectadas. O sistema precisa ajustar o total do pote para garantir integridade.",
-    "detail.recalc_btn": "Recalcular",
+    "detail.recalc_btn": "Recalculate",
     "detail.approve_risk": "Aprovar Risco",
     "detail.approve_risk_desc": "Aceitar as diferenças e continuar.",
     "detail.risk_alert": "ALERTA DE RISCO",
@@ -434,6 +435,7 @@ export const translations = {
     "wiz.add_member_desc": "Add everyone who is joining. We will set the order next.",
     "wiz.placeholder_member": "Member Name",
     "wiz.btn_add_member": "Add Member",
+    "wiz.est_date": "Est. Date",
     "wiz.algo_title": "The Algorithm of Justice",
     "wiz.algo_desc": "Set the rotation order. Lock months for specific needs.",
     "wiz.lock": "Lock position",
