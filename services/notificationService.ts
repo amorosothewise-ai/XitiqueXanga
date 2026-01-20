@@ -1,3 +1,4 @@
+
 import { Xitique, Notification, XitiqueType, XitiqueStatus } from '../types';
 import { getXitiques } from './storage';
 import { formatCurrency } from './formatUtils';
@@ -21,12 +22,6 @@ export const markNotificationRead = (id: string): Notification[] => {
   return updated;
 };
 
-/**
- * Pure function to generate notifications based on state.
- * @param xitiques List of all xitiques
- * @param existingIds Set of notification IDs already generated to prevent duplicates
- * @param referenceDate The "current" date (defaults to now)
- */
 export const generateNotificationsLogic = (
   xitiques: Xitique[], 
   existingIds: Set<string>,
@@ -39,13 +34,11 @@ export const generateNotificationsLogic = (
       
       // GROUP LOGIC
       if (x.type === XitiqueType.GROUP) {
-        // Recalculate Pot based on active participants settings
         const currentCyclePot = calculateCyclePot(x.amount, x.participants);
 
         x.participants.forEach(p => {
           if (!p.received && p.payoutDate) {
             const pDate = new Date(p.payoutDate);
-            // Reset time to start of day for accurate day diff comparison
             const pDateStart = new Date(pDate.setHours(0,0,0,0));
             const refDateStart = new Date(referenceDate.setHours(0,0,0,0));
             
@@ -89,7 +82,6 @@ export const generateNotificationsLogic = (
             // 3. Overdue (Negative)
             if (diffDays < 0 && diffDays > -30) {
                const baseOverdueId = `overdue-${x.id}-${p.id}`;
-               
                if (!existingIds.has(baseOverdueId)) {
                 newNotifications.push({
                   id: baseOverdueId,
@@ -110,8 +102,6 @@ export const generateNotificationsLogic = (
       if (x.type === XitiqueType.INDIVIDUAL) {
          const created = new Date(x.createdAt || Date.now());
          const diffCreated = Math.ceil((referenceDate.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
-         
-         // Use shared logic for balance calculation
          const currentBalance = calculateBalance(x.transactions || []);
 
          // Weekly encouragement
@@ -136,16 +126,15 @@ export const generateNotificationsLogic = (
   return newNotifications;
 };
 
-export const checkAndGenerateNotifications = (): Notification[] => {
-  const xitiques = getXitiques();
+// Now ASYNC because it needs to fetch fresh data from DB
+export const checkAndGenerateNotifications = async (): Promise<Notification[]> => {
+  const xitiques = await getXitiques();
   const existingNotifications = getNotifications();
-  
   const existingIds = new Set(existingNotifications.map(n => n.id));
   
   const generated = generateNotificationsLogic(xitiques, existingIds);
   
   if (generated.length > 0) {
-      // Prepend new notifications
       const updated = [...generated, ...existingNotifications];
       saveNotifications(updated);
       return updated;

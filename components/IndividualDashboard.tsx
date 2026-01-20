@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Xitique, XitiqueType, Frequency, PaymentMethod, TransactionType } from '../types';
 import { getXitiques, saveXitique, createNewXitique, deleteXitique } from '../services/storage';
 import { calculateBalance, createTransaction, validateTransaction } from '../services/financeLogic';
 import { formatCurrency } from '../services/formatUtils';
-import { PiggyBank, Plus, Smartphone, Banknote, Trash, X, ShieldAlert } from 'lucide-react';
+import { PiggyBank, Plus, Smartphone, Banknote, Trash, X, ShieldAlert, Loader2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import FinancialTip from './FinancialTip';
@@ -14,6 +15,7 @@ const IndividualDashboard: React.FC = () => {
   const { addToast } = useToast();
   const [sticks, setSticks] = useState<Xitique[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   // Withdrawal State
   const [withdrawStick, setWithdrawStick] = useState<Xitique | null>(null);
@@ -49,12 +51,14 @@ const IndividualDashboard: React.FC = () => {
     loadSticks();
   }, []);
 
-  const loadSticks = () => {
-    const all = getXitiques();
+  const loadSticks = async () => {
+    setLoading(true);
+    const all = await getXitiques();
     setSticks(all.filter(x => x.type === XitiqueType.INDIVIDUAL));
+    setLoading(false);
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!name) {
         addToast(t('wiz.alert_name'), 'error');
         return;
@@ -71,13 +75,17 @@ const IndividualDashboard: React.FC = () => {
       participants: []
     });
 
-    saveXitique(newStick);
-    addToast(t('common.success'), 'success');
-    setIsCreating(false);
-    loadSticks();
-    setName('');
-    setTargetAmount(5000);
-    setAmount(100);
+    try {
+        await saveXitique(newStick);
+        addToast(t('common.success'), 'success');
+        setIsCreating(false);
+        loadSticks();
+        setName('');
+        setTargetAmount(5000);
+        setAmount(100);
+    } catch(err) {
+        addToast('Failed to create', 'error');
+    }
   };
 
   const requestDelete = (id: string, e: React.MouseEvent) => {
@@ -88,18 +96,17 @@ const IndividualDashboard: React.FC = () => {
         title: t('modal.delete_title'),
         desc: t('modal.delete_desc'),
         confirmText: t('modal.confirm_delete'),
-        action: () => {
-            deleteXitique(id); // Now performs soft delete
+        action: async () => {
+            await deleteXitique(id); 
             loadSticks();
             addToast('Item deletado', 'info');
         }
     });
   };
 
-  const handleDeposit = (stick: Xitique, e?: React.MouseEvent) => {
+  const handleDeposit = async (stick: Xitique, e?: React.MouseEvent) => {
     if(e) e.stopPropagation();
     
-    // Validate transaction via logic layer
     const validation = validateTransaction(stick, TransactionType.DEPOSIT, stick.amount);
     if (!validation.valid) {
         addToast(validation.error || 'Erro', 'error');
@@ -112,22 +119,17 @@ const IndividualDashboard: React.FC = () => {
         t('ind.type_deposit')
     );
 
-    // CORE PRINCIPLE: Immutable Transactions
-    // We strictly append to history. We do NOT edit `currentBalance` directly.
     const updated = {
       ...stick,
       transactions: [newTx, ...(stick.transactions || [])]
     };
     
-    // Only updating currentBalance for legacy/UI cache if needed, but reliance is on calculation
-    updated.currentBalance = calculateBalance(updated.transactions);
-
-    saveXitique(updated);
+    await saveXitique(updated);
     addToast(t('ind.type_deposit') + ' ' + t('common.success'), 'success');
     loadSticks();
   };
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
     if(!withdrawStick) return;
     
     const validation = validateTransaction(withdrawStick, TransactionType.WITHDRAWAL, withdrawAmount);
@@ -146,10 +148,8 @@ const IndividualDashboard: React.FC = () => {
         ...withdrawStick,
         transactions: [newTx, ...(withdrawStick.transactions || [])]
     };
-    // Cache update
-    updated.currentBalance = calculateBalance(updated.transactions);
 
-    saveXitique(updated);
+    await saveXitique(updated);
     setWithdrawStick(null);
     setWithdrawAmount(0);
     setWithdrawError('');
@@ -296,6 +296,10 @@ const IndividualDashboard: React.FC = () => {
     );
   }
 
+  if (loading) {
+     return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-purple-500" /></div>;
+  }
+
   return (
     <div className="space-y-8 animate-fade-in pb-12">
         {/* Confirmation Modal */}
@@ -322,7 +326,6 @@ const IndividualDashboard: React.FC = () => {
 
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
                         <div className="text-xs text-slate-400 font-bold uppercase">{t('ind.balance')}</div>
-                        {/* Calculate balance for display, do not rely on stored property */}
                         <div className="text-xl font-bold text-slate-900">{formatCurrency(calculateBalance(withdrawStick.transactions))}</div>
                     </div>
 

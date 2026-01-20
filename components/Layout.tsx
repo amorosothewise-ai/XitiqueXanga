@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, PlusCircle, Calculator, Info, Gem, Globe, PiggyBank, Bell, X, Check, Settings, LogOut, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Calculator, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { checkAndGenerateNotifications, markNotificationRead } from '../services/notificationService';
 import { Notification, UserProfile } from '../types';
@@ -19,8 +20,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const notifs = checkAndGenerateNotifications();
-    setNotifications(notifs);
+    // Make async call
+    checkAndGenerateNotifications().then(notifs => {
+      setNotifications(notifs);
+    });
+    
     setUser(getUserProfile());
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -212,7 +216,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
       )}
 
       {/* Main Content Area */}
-      {/* Added pb-24 to ensure content is not hidden behind mobile nav */}
       <main className="flex-1 md:ml-72 p-4 md:p-8 mb-20 md:mb-0 pb-24 md:pb-8 overflow-y-auto min-h-screen">
         <div className="max-w-6xl mx-auto">
           {children}

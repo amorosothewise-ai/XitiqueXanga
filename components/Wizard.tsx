@@ -1,21 +1,23 @@
+
 import React, { useState, useEffect } from 'react';
 import { Frequency, Xitique, PaymentMethod } from '../types';
 import { createNewXitique, saveXitique } from '../services/storage';
 import { addPeriod, formatDate } from '../services/dateUtils';
-import { ChevronRight, ChevronLeft, Check, UserPlus, Trash2, ArrowUp, ArrowDown, Calendar, GripVertical, Lock, Unlock, Smartphone, Banknote, RefreshCw } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, UserPlus, Trash2, ArrowUp, ArrowDown, Calendar, GripVertical, Lock, Unlock, Smartphone, Banknote, RefreshCw, Loader2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 
 interface WizardProps {
   onComplete: () => void;
   onCancel: () => void;
-  initialData?: Xitique | null; // For Renewal Flow
+  initialData?: Xitique | null; 
 }
 
 const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) => {
   const { t } = useLanguage();
   const { addToast } = useToast();
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
   const [amount, setAmount] = useState(100);
   const [frequency, setFrequency] = useState<Frequency>(Frequency.MONTHLY);
@@ -97,7 +99,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
     setLockedIndices(newLocked);
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    setLoading(true);
     // Generate NEW IDs for participants to ensure no reference linking to old cycle
     const participants = orderedParticipants.map((pName, index) => ({
       id: crypto.randomUUID(),
@@ -116,9 +119,15 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
       participants
     });
 
-    saveXitique(newXitique);
-    addToast(t('common.success'), 'success');
-    onComplete();
+    try {
+        await saveXitique(newXitique);
+        addToast(t('common.success'), 'success');
+        onComplete();
+    } catch (err) {
+        console.error(err);
+        addToast('Failed to save. Please try again.', 'error');
+        setLoading(false);
+    }
   };
 
   const isRenewal = !!initialData;
@@ -446,8 +455,10 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
           ) : (
             <button 
               onClick={handleFinish} 
-              className="bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-4 rounded-xl font-bold flex items-center shadow-xl shadow-emerald-200 transition-all transform hover:-translate-y-1"
+              disabled={loading}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-10 py-4 rounded-xl font-bold flex items-center shadow-xl shadow-emerald-200 transition-all transform hover:-translate-y-1 disabled:opacity-50"
             >
+              {loading ? <Loader2 className="animate-spin mr-2" /> : null}
               {isRenewal ? t('wiz.btn_launch_renew') : t('wiz.btn_launch')}
             </button>
           )}

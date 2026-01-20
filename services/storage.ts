@@ -1,52 +1,121 @@
 
+import { supabase } from './supabase';
+import { Xitique, XitiqueStatus, XitiqueType, UserProfile, Participant, Transaction } from '../types';
 
-import { Xitique, XitiqueStatus, XitiqueType, UserProfile } from '../types';
+// --- Xitique Data (Database) ---
 
-const STORAGE_KEY = 'xitique_app_data_v1';
-const USER_KEY = 'xitique_user_profile_v1';
+export const getXitiques = async (): Promise<Xitique[]> => {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user.user) return [];
 
-// --- Xitique Data ---
+  // Fetch Xitiques with their related data
+  const { data, error } = await supabase
+    .from('xitiques')
+    .select(`
+      *,
+      participants (*),
+      transactions (*)
+    `)
+    .neq('status', 'ARCHIVED')
+    .order('created_at', { ascending: false });
 
-export const getXitiques = (): Xitique[] => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  const items: Xitique[] = data ? JSON.parse(data) : [];
-  // CORE PRINCIPLE: Filter out ARCHIVED items from general view
-  // But keep them in storage for data integrity/recovery
-  return items.filter(x => x.status !== XitiqueStatus.ARCHIVED);
-};
-
-export const saveXitique = (xitique: Xitique): void => {
-  // Get RAW data to ensure we don't miss archived items when saving
-  const data = localStorage.getItem(STORAGE_KEY);
-  const current: Xitique[] = data ? JSON.parse(data) : [];
-  
-  const existingIndex = current.findIndex(x => x.id === xitique.id);
-  
-  if (existingIndex >= 0) {
-    current[existingIndex] = xitique;
-  } else {
-    current.push(xitique);
+  if (error) {
+    console.error("Error fetching xitiques:", error);
+    return [];
   }
-  
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+
+  // Map Database Snake_case to App CamelCase
+  return data.map((x: any) => ({
+    id: x.id,
+    name: x.name,
+    type: x.type as XitiqueType,
+    amount: Number(x.amount),
+    targetAmount: x.target_amount ? Number(x.target_amount) : undefined,
+    currentBalance: 0, // Derived elsewhere
+    method: x.method,
+    frequency: x.frequency,
+    startDate: x.start_date,
+    status: x.status as XitiqueStatus,
+    createdAt: new Date(x.created_at).getTime(),
+    participants: (x.participants || []).map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      received: p.received,
+      order: p.order,
+      payoutDate: p.payout_date,
+      customContribution: p.custom_contribution ? Number(p.custom_contribution) : undefined
+    })).sort((a: any, b: any) => a.order - b.order),
+    transactions: (x.transactions || []).map((t: any) => ({
+      id: t.id,
+      type: t.type,
+      amount: Number(t.amount),
+      date: t.date,
+      description: t.description,
+      referenceId: t.reference_id
+    })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  }));
 };
 
-/**
- * CORE PRINCIPLE: Never permanently delete financial data.
- * We use Soft Delete by changing status to ARCHIVED.
- */
-export const deleteXitique = (id: string): void => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  const current: Xitique[] = data ? JSON.parse(data) : [];
-  
-  const updated = current.map(x => {
-    if (x.id === id) {
-      return { ...x, status: XitiqueStatus.ARCHIVED };
-    }
-    return x;
+export const saveXitique = async (xitique: Xitique): Promise<void> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("User not authenticated");
+
+  // 1. Upsert Root Xitique
+  const { error: xError } = await supabase.from('xitiques').upsert({
+    id: xitique.id,
+    user_id: user.id,
+    name: xitique.name,
+    type: xitique.type,
+    amount: xitique.amount,
+    target_amount: xitique.targetAmount,
+    frequency: xitique.frequency,
+    status: xitique.status,
+    method: xitique.method,
+    start_date: xitique.startDate,
+    // created_at is handled by default on insert, ignored on update if not specified
   });
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  if (xError) throw xError;
+
+  // 2. Upsert Participants
+  if (xitique.participants.length > 0) {
+    const dbParticipants = xitique.participants.map(p => ({
+      id: p.id,
+      xitique_id: xitique.id,
+      name: p.name,
+      payout_date: p.payoutDate,
+      received: p.received,
+      order: p.order,
+      custom_contribution: p.customContribution
+    }));
+    const { error: pError } = await supabase.from('participants').upsert(dbParticipants);
+    if (pError) throw pError;
+  }
+
+  // 3. Upsert Transactions
+  if (xitique.transactions.length > 0) {
+    const dbTransactions = xitique.transactions.map(t => ({
+      id: t.id,
+      xitique_id: xitique.id,
+      type: t.type,
+      amount: t.amount,
+      date: t.date,
+      description: t.description,
+      reference_id: t.referenceId
+    }));
+    const { error: tError } = await supabase.from('transactions').upsert(dbTransactions);
+    if (tError) throw tError;
+  }
+};
+
+export const deleteXitique = async (id: string): Promise<void> => {
+  // Soft Delete via Status update
+  const { error } = await supabase
+    .from('xitiques')
+    .update({ status: XitiqueStatus.ARCHIVED })
+    .eq('id', id);
+
+  if (error) throw error;
 };
 
 export const createNewXitique = (partial: Partial<Xitique>): Xitique => {
@@ -56,7 +125,6 @@ export const createNewXitique = (partial: Partial<Xitique>): Xitique => {
     type: partial.type || XitiqueType.GROUP,
     amount: partial.amount || 100,
     targetAmount: partial.targetAmount,
-    // currentBalance is deprecated, strictly initialize at 0 for UI compat, but derived logic rules
     currentBalance: 0, 
     method: partial.method,
     frequency: partial.frequency || 'MONTHLY' as any,
@@ -64,17 +132,18 @@ export const createNewXitique = (partial: Partial<Xitique>): Xitique => {
     participants: partial.participants || [],
     status: XitiqueStatus.PLANNING,
     createdAt: Date.now(),
-    transactions: [], // Initialize empty history
+    transactions: [], 
   };
 };
 
-// --- User Profile Data ---
+// --- User Profile Data (Legacy Local / Auth Sync) ---
+
+const USER_KEY = 'xitique_user_profile_v1';
 
 export const getUserProfile = (): UserProfile => {
   const data = localStorage.getItem(USER_KEY);
   if (data) {
     const parsed = JSON.parse(data);
-    // Backward compatibility: ensure preferences object exists
     if (!parsed.notificationPreferences) {
       parsed.notificationPreferences = {
         contributions: true,
@@ -84,14 +153,11 @@ export const getUserProfile = (): UserProfile => {
     }
     return parsed;
   }
-
   return {
     id: 'guest',
-    name: 'Usuário Convidado',
-    email: '', // Guest email placeholder
+    name: 'Usuário',
+    email: '',
     language: 'pt',
-    avatarColor: 'bg-emerald-500',
-    joinedAt: Date.now(),
     lastLogin: new Date().toISOString(),
     notificationPreferences: {
       contributions: true,
@@ -102,6 +168,5 @@ export const getUserProfile = (): UserProfile => {
 };
 
 export const saveUserProfile = (profile: UserProfile): void => {
-  // Update last login implicitly on save if needed, or just save state
   localStorage.setItem(USER_KEY, JSON.stringify(profile));
 };

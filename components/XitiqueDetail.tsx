@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Xitique, Participant, TransactionType, XitiqueStatus } from '../types';
 import { formatDate } from '../services/dateUtils';
@@ -5,7 +6,7 @@ import { formatCurrency } from '../services/formatUtils';
 import { analyzeFairness } from '../services/geminiService';
 import { saveXitique } from '../services/storage';
 import { createTransaction, calculateCyclePot } from '../services/financeLogic';
-import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Copy } from 'lucide-react';
+import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Loader2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import FinancialTip from './FinancialTip';
@@ -89,12 +90,12 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
     setLoadingAi(false);
   };
 
-  const handleRecalculate = () => {
+  const handleRecalculate = async () => {
       const updatedXitique = { 
           ...xitique, 
           status: hasUnequalContributions ? XitiqueStatus.RISK : XitiqueStatus.ACTIVE 
       };
-      saveXitique(updatedXitique);
+      await saveXitique(updatedXitique);
       if(updatedXitique.status === XitiqueStatus.RISK) {
           xitique.status = XitiqueStatus.RISK; 
       }
@@ -128,7 +129,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
     }
   };
 
-  const executeToggle = (participantId: string) => {
+  const executeToggle = async (participantId: string) => {
     const participant = xitique.participants.find(p => p.id === participantId);
     if (!participant) return;
 
@@ -164,8 +165,11 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
         status: allReceived ? XitiqueStatus.COMPLETED : (hasUnequalContributions ? XitiqueStatus.RISK : XitiqueStatus.ACTIVE)
     };
     
-    saveXitique(updatedXitique);
+    await saveXitique(updatedXitique);
     
+    // Mutate local state only after successful save or rely on re-fetch. 
+    // For smoothness, mutating local props reference or triggering reload is needed.
+    // Ideally parent should refetch, but here we update local reference for instant UI feedback.
     xitique.participants = updatedParticipants; 
     xitique.transactions = updatedTx;
     xitique.status = updatedXitique.status;
@@ -174,10 +178,10 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
     addToast(willReceive ? 'Pagamento registrado com sucesso' : 'Pagamento revertido', willReceive ? 'success' : 'info');
   };
 
-  const saveBaseContributionChange = () => {
+  const saveBaseContributionChange = async () => {
     if (newBaseAmount <= 0) return;
     const updatedXitique = { ...xitique, amount: newBaseAmount };
-    saveXitique(updatedXitique);
+    await saveXitique(updatedXitique);
     xitique.amount = newBaseAmount; 
     setIsEditingBase(false);
     addToast('Contribuição base atualizada', 'success');
@@ -188,21 +192,30 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
       setEditingParticipantId(p.id);
   };
 
-  const saveIndividualContribution = (id: string) => {
+  const saveIndividualContribution = async (id: string) => {
       const updatedParticipants = xitique.participants.map(p => {
           if (p.id === id) {
               return { ...p, customContribution: individualAmount };
           }
           return p;
       });
+
+      // Determine if there are unequal contributions
+      const isRisk = updatedParticipants.some(p => {
+         const val = p.customContribution !== undefined ? p.customContribution : xitique.amount;
+         return val !== xitique.amount;
+      });
+
+      const newStatus = isRisk ? XitiqueStatus.RISK : XitiqueStatus.ACTIVE;
+
       const updatedXitique = { 
           ...xitique, 
           participants: updatedParticipants,
-          status: XitiqueStatus.RISK 
+          status: newStatus 
       };
-      saveXitique(updatedXitique);
+      await saveXitique(updatedXitique);
       xitique.participants = updatedParticipants;
-      xitique.status = XitiqueStatus.RISK;
+      xitique.status = newStatus;
       setEditingParticipantId(null);
       addToast('Contribuição individual atualizada', 'success');
   };

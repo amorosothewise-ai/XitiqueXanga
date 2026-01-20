@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Xitique, Frequency, XitiqueStatus, XitiqueType } from '../types';
 import { getXitiques, getUserProfile } from '../services/storage';
 import { formatCurrency } from '../services/formatUtils';
-import { PlusCircle, Calendar, ChevronRight, Wallet, TrendingUp, Users, Clock } from 'lucide-react';
-import { formatDate } from '../services/dateUtils';
+import { PlusCircle, ChevronRight, Wallet, Users, Loader2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import FinancialTip from './FinancialTip';
 
@@ -14,36 +14,38 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
   const [xitiques, setXitiques] = useState<Xitique[]>([]);
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(getUserProfile());
   const { t } = useLanguage();
 
   useEffect(() => {
-    setXitiques(getXitiques());
-    setUser(getUserProfile());
+    async function loadData() {
+      setLoading(true);
+      const data = await getXitiques();
+      setXitiques(data);
+      setUser(getUserProfile());
+      setLoading(false);
+    }
+    loadData();
   }, []);
 
   // Calculate Dashboard Stats
   const activeXitiques = xitiques.filter(x => x.status === XitiqueStatus.ACTIVE || x.status === XitiqueStatus.RISK);
   const totalCommitment = activeXitiques.reduce((sum, x) => {
-      // For groups, user contributes 'amount'. For individual, they contribute 'amount'.
-      // If individual frequency is daily, normalize to monthly approx? Let's just sum raw 'amount' per period for simplicity.
-      // Or better: Sum of all active target amounts (Pot Size) / Participants if group?
-      // Let's stick to: "Your Monthly Contribution Value"
       let contribution = x.amount;
       if (x.frequency === Frequency.WEEKLY) contribution *= 4;
       if (x.frequency === Frequency.DAILY) contribution *= 30;
       return sum + contribution;
   }, 0);
-  
-  const totalSaved = xitiques.reduce((sum, x) => {
-      // Calculate derived balance/payouts received
-      if (x.type === XitiqueType.INDIVIDUAL) {
-          return sum + (x.transactions?.reduce((acc, t) => t.type === 'DEPOSIT' ? acc + t.amount : acc, 0) || 0);
-      }
-      return sum;
-      // Note: For groups, "saved" implies what you received? Or what you put in?
-      // Simple metric: Individual Xitique Balances.
-  }, 0);
+
+  if (loading) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
+            <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
+            <p className="text-slate-400 font-medium">Loading your circles...</p>
+        </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -122,7 +124,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
                         'border-slate-200 hover:border-emerald-300 shadow-sm hover:shadow-xl'
                     }`}
                 >
-                    {/* Status Badge */}
                     <div className="absolute top-4 right-4">
                         {isCompleted && <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-lg uppercase">Done</span>}
                         {x.status === XitiqueStatus.RISK && <span className="bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-1 rounded-lg uppercase">Action Needed</span>}
