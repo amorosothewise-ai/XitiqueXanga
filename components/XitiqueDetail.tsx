@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Xitique, Participant, TransactionType, XitiqueStatus } from '../types';
 import { formatDate, addPeriod } from '../services/dateUtils';
@@ -61,6 +62,9 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
   const hasUnequalContributions = xitique.participants.some(p => p.customContribution !== undefined && p.customContribution !== xitique.amount);
   const progressPercentage = (xitique.participants.filter(p => p.received).length / xitique.participants.length) * 100;
   const isCompleted = xitique.status === XitiqueStatus.COMPLETED;
+  
+  // Check if payments have started (block delete if true)
+  const paymentsStarted = xitique.participants.some(p => p.received);
 
   // Modal State
   const [confirmModal, setConfirmModal] = useState<{
@@ -281,6 +285,52 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
       startEditingParticipant(newMember);
       addToast('Membro adicionado', 'success');
       setForceUpdate(prev => prev + 1);
+  };
+
+  // DELETE MEMBER LOGIC
+  const handleDeleteMemberClick = (p: Participant) => {
+    setConfirmModal({
+        isOpen: true,
+        type: 'danger',
+        title: `${t('detail.remove_member_title')} ${p.name}?`,
+        desc: t('detail.remove_member_desc'),
+        confirmText: t('detail.remove_confirm'),
+        action: () => executeDeleteMember(p.id)
+    });
+  };
+
+  const executeDeleteMember = async (id: string) => {
+      // 1. Filter
+      const remainingParticipants = xitique.participants.filter(p => p.id !== id);
+      
+      // 2. Reorder & Redate
+      const reorderedParticipants = remainingParticipants.map((p, index) => ({
+          ...p,
+          order: index + 1,
+          payoutDate: addPeriod(xitique.startDate, xitique.frequency, index)
+      }));
+
+      // 3. Status Check
+      const hasUnequal = reorderedParticipants.some(p => {
+         const val = p.customContribution !== undefined ? p.customContribution : xitique.amount;
+         return val !== xitique.amount;
+      });
+      const newStatus = hasUnequal ? XitiqueStatus.RISK : (xitique.status === XitiqueStatus.RISK ? XitiqueStatus.ACTIVE : xitique.status);
+
+      const updatedXitique = { 
+          ...xitique, 
+          participants: reorderedParticipants,
+          status: newStatus 
+      };
+      
+      await saveXitique(updatedXitique);
+      
+      // Update local state
+      xitique.participants = reorderedParticipants;
+      xitique.status = newStatus;
+      
+      setForceUpdate(prev => prev + 1);
+      addToast(t('common.success'), 'success');
   };
 
   const startEditingParticipant = (p: Participant) => {
@@ -1178,19 +1228,30 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                         <button onClick={() => setEditForm(null)} className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 p-2.5 rounded-lg transition-transform hover:scale-105"><X size={18} /></button>
                        </div>
                    ) : (
-                       <button 
-                          onClick={() => handleToggleClick(p.id)}
-                          disabled={isCompleted}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
-                              p.received 
-                              ? 'bg-emerald-100 text-emerald-700' 
-                              : isCompleted 
-                                  ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
-                                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                          }`}
-                       >
-                          {p.received ? t('detail.paid_out') : t('detail.mark_paid')}
-                       </button>
+                       <>
+                          {!paymentsStarted && (
+                              <button 
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteMemberClick(p); }}
+                                  className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-100"
+                                  title={t('detail.remove_member_title') || "Remove"}
+                              >
+                                  <Trash size={18} />
+                              </button>
+                          )}
+                          <button 
+                              onClick={() => handleToggleClick(p.id)}
+                              disabled={isCompleted}
+                              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                                  p.received 
+                                  ? 'bg-emerald-100 text-emerald-700' 
+                                  : isCompleted 
+                                      ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                              }`}
+                          >
+                              {p.received ? t('detail.paid_out') : t('detail.mark_paid')}
+                          </button>
+                       </>
                    )}
                 </div>
               </div>
