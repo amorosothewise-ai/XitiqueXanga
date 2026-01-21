@@ -1,3 +1,4 @@
+
 {
   "name": "xitique-xanga",
   "private": true,
@@ -9,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^0.1.1",
+    "@google/genai": "^0.0.2",
     "@supabase/supabase-js": "^2.39.0",
     "lucide-react": "^0.300.0",
     "react": "^18.2.0",
