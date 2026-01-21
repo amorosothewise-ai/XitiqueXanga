@@ -124,7 +124,26 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
   const processedParticipants = [...xitique.participants]
     .filter(p => {
         if (!searchTerm) return true;
-        return p.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const term = searchTerm.toLowerCase();
+        
+        // 1. Name Match
+        if (p.name.toLowerCase().includes(term)) return true;
+        
+        // 2. Date Match (Formatted)
+        const dateStr = p.payoutDate ? formatDate(p.payoutDate).toLowerCase() : '';
+        if (dateStr.includes(term)) return true;
+        
+        // 3. Amount Match (Custom)
+        if (p.customContribution?.toString().includes(term)) return true;
+        
+        // 4. Status Match
+        const statusPaid = t('detail.paid_out').toLowerCase();
+        const statusPending = "pending"; // Common fallback term
+        if (p.received && statusPaid.includes(term)) return true;
+        // Basic heuristic for 'pending' in different languages if user types 'pen'
+        if (!p.received && (term.includes('pen') || statusPending.includes(term))) return true;
+        
+        return false;
     })
     .sort((a, b) => {
       const dir = sortConfig.direction === 'asc' ? 1 : -1;
@@ -529,9 +548,18 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
         const footer = `\nGerado por Xitique Xanga`;
         const fullText = `${header}\n\n📅 *Cronograma e Pagamentos:*\n${list}${footer}`;
 
-        await navigator.clipboard.writeText(fullText);
-        addToast(t('detail.share_success'), 'success');
+        if (navigator.share) {
+            await navigator.share({
+                title: xitique.name,
+                text: fullText,
+            });
+            addToast(t('detail.share_success'), 'success');
+        } else {
+            await navigator.clipboard.writeText(fullText);
+            addToast(t('detail.share_success'), 'success');
+        }
     } catch (err) {
+        console.error("Share failed:", err);
         addToast(t('detail.share_fail'), 'error');
     }
   };
@@ -1022,7 +1050,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                  <Search className="absolute left-3 top-3 text-slate-400" size={18} />
                  <input 
                    type="text" 
-                   placeholder="Search member..." 
+                   placeholder="Search (name, amount, date)..." 
                    className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium transition-all"
                    value={searchTerm}
                    onChange={(e) => setSearchTerm(e.target.value)}

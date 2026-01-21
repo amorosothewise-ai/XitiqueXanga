@@ -4,7 +4,8 @@ import { Xitique, XitiqueType, Frequency, PaymentMethod, TransactionType } from 
 import { getXitiques, saveXitique, createNewXitique, deleteXitique } from '../services/storage';
 import { calculateBalance, createTransaction, validateTransaction } from '../services/financeLogic';
 import { formatCurrency } from '../services/formatUtils';
-import { PiggyBank, Plus, Smartphone, Banknote, Trash, X, ShieldAlert, Loader2 } from 'lucide-react';
+import { addPeriod } from '../services/dateUtils';
+import { PiggyBank, Plus, Smartphone, Banknote, Trash, X, ShieldAlert, Loader2, Calendar, Hash, Target, Calculator } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import FinancialTip from './FinancialTip';
@@ -40,16 +41,56 @@ const IndividualDashboard: React.FC = () => {
 
   // Form State
   const [name, setName] = useState('');
-  const [targetAmount, setTargetAmount] = useState(5000);
   const [amount, setAmount] = useState(100);
   const [frequency, setFrequency] = useState<Frequency>(Frequency.DAILY);
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.MPESA);
+  
+  // New Planning State
+  const [goalMode, setGoalMode] = useState<'manual' | 'date' | 'count'>('manual');
+  const [targetAmount, setTargetAmount] = useState(5000); // Result
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(addPeriod(new Date().toISOString(), Frequency.DAILY, 30).split('T')[0]);
+  const [occurrences, setOccurrences] = useState(10);
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     loadSticks();
   }, []);
+
+  // --- Auto-Calculation Logic ---
+  useEffect(() => {
+    if (goalMode === 'manual') return;
+
+    if (goalMode === 'count') {
+        // Calculate Target and End Date based on Count
+        const total = amount * occurrences;
+        setTargetAmount(total);
+        // Estimate end date
+        const calculatedEnd = addPeriod(startDate, frequency, occurrences);
+        setEndDate(calculatedEnd.split('T')[0]);
+    } else if (goalMode === 'date') {
+        // Calculate Count and Target based on Date Range
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        if (end > start) {
+            const diffTime = Math.abs(end.getTime() - start.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            
+            let count = 0;
+            if (frequency === Frequency.DAILY) count = diffDays;
+            if (frequency === Frequency.WEEKLY) count = Math.floor(diffDays / 7);
+            if (frequency === Frequency.MONTHLY) count = Math.floor(diffDays / 30);
+            
+            setOccurrences(count);
+            setTargetAmount(count * amount);
+        } else {
+            setOccurrences(0);
+            setTargetAmount(0);
+        }
+    }
+  }, [amount, frequency, startDate, endDate, occurrences, goalMode]);
 
   const loadSticks = async () => {
     setLoading(true);
@@ -64,6 +105,11 @@ const IndividualDashboard: React.FC = () => {
         return;
     }
 
+    if (targetAmount <= 0) {
+        addToast('Accumulated amount must be greater than 0', 'error');
+        return;
+    }
+
     const newStick = createNewXitique({
       name,
       type: XitiqueType.INDIVIDUAL,
@@ -71,7 +117,7 @@ const IndividualDashboard: React.FC = () => {
       amount,
       frequency,
       method,
-      startDate: new Date().toISOString(),
+      startDate: new Date(startDate).toISOString(),
       participants: []
     });
 
@@ -80,9 +126,12 @@ const IndividualDashboard: React.FC = () => {
         addToast(t('common.success'), 'success');
         setIsCreating(false);
         loadSticks();
+        // Reset defaults
         setName('');
         setTargetAmount(5000);
         setAmount(100);
+        setOccurrences(10);
+        setGoalMode('manual');
     } catch(err) {
         addToast('Failed to create', 'error');
     }
@@ -193,7 +242,7 @@ const IndividualDashboard: React.FC = () => {
 
   if (isCreating) {
     return (
-       <div className="max-w-xl mx-auto bg-white p-8 rounded-3xl shadow-xl border border-slate-200 animate-fade-in my-8">
+       <div className="max-w-xl mx-auto bg-white p-6 md:p-8 rounded-3xl shadow-xl border border-slate-200 animate-fade-in my-8">
         <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
                 <PiggyBank className="text-purple-500" /> {t('ind.create_btn')}
@@ -204,6 +253,7 @@ const IndividualDashboard: React.FC = () => {
         </div>
         
         <div className="space-y-6">
+            {/* 1. Name */}
             <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">{t('ind.form_name')}</label>
                 <input 
@@ -215,52 +265,143 @@ const IndividualDashboard: React.FC = () => {
                 />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* 2. Frequency & Amount */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">{t('ind.form_target')}</label>
-                    <div className="relative">
-                        <span className="absolute left-3 top-3.5 text-slate-400 text-xs font-bold">{t('common.currency')}</span>
-                        <input 
-                            type="number" 
-                            value={targetAmount} 
-                            onChange={(e) => setTargetAmount(Number(e.target.value))}
-                            className="w-full p-3 pl-10 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none font-mono"
-                        />
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">{t('ind.form_freq')}</label>
+                    <div className="flex bg-white rounded-lg border border-slate-200 p-1">
+                        {[Frequency.DAILY, Frequency.WEEKLY, Frequency.MONTHLY].map(f => (
+                            <button
+                                key={f}
+                                onClick={() => setFrequency(f)}
+                                className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${
+                                    frequency === f 
+                                    ? 'bg-purple-100 text-purple-700 shadow-sm' 
+                                    : 'text-slate-400 hover:bg-slate-50'
+                                }`}
+                            >
+                                {f === Frequency.DAILY ? 'Day' : f === Frequency.WEEKLY ? 'Week' : 'Month'}
+                            </button>
+                        ))}
                     </div>
                 </div>
                 <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">{t('ind.form_contribution')}</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">{t('ind.form_contribution')}</label>
                     <div className="relative">
-                        <span className="absolute left-3 top-3.5 text-slate-400 text-xs font-bold">{t('common.currency')}</span>
+                        <span className="absolute left-3 top-2.5 text-slate-400 text-xs font-bold">{t('common.currency')}</span>
                         <input 
                             type="number" 
                             value={amount} 
                             onChange={(e) => setAmount(Number(e.target.value))}
-                            className="w-full p-3 pl-10 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none font-mono"
+                            className="w-full p-2 pl-10 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none font-bold text-slate-900"
                         />
                     </div>
                 </div>
             </div>
 
+            {/* 3. Goal Planning Tabs */}
             <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">{t('ind.form_freq')}</label>
-                <div className="grid grid-cols-3 gap-2">
-                    {[Frequency.DAILY, Frequency.WEEKLY, Frequency.MONTHLY].map(f => (
-                        <button
-                            key={f}
-                            onClick={() => setFrequency(f)}
-                            className={`py-2 px-1 rounded-lg text-xs font-bold border transition-all ${
-                                frequency === f 
-                                ? 'bg-purple-600 text-white border-purple-600' 
-                                : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
-                            }`}
-                        >
-                            {getFrequencyLabel(f)}
-                        </button>
-                    ))}
+                <label className="block text-sm font-bold text-slate-700 mb-2">Planning Method</label>
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                     <button 
+                        onClick={() => setGoalMode('manual')}
+                        className={`py-3 px-2 rounded-xl text-xs font-bold border flex flex-col items-center gap-1 transition-all ${
+                            goalMode === 'manual' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'
+                        }`}
+                     >
+                        <Target size={16} /> Total Target
+                     </button>
+                     <button 
+                        onClick={() => setGoalMode('date')}
+                        className={`py-3 px-2 rounded-xl text-xs font-bold border flex flex-col items-center gap-1 transition-all ${
+                            goalMode === 'date' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'
+                        }`}
+                     >
+                        <Calendar size={16} /> By Date
+                     </button>
+                     <button 
+                        onClick={() => setGoalMode('count')}
+                        className={`py-3 px-2 rounded-xl text-xs font-bold border flex flex-col items-center gap-1 transition-all ${
+                            goalMode === 'count' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'
+                        }`}
+                     >
+                        <Hash size={16} /> By Count
+                     </button>
+                </div>
+
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
+                    {/* Common Start Date */}
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1">Start Date</label>
+                        <input 
+                             type="date" 
+                             value={startDate} 
+                             onChange={(e) => setStartDate(e.target.value)}
+                             className="w-full p-2 border border-slate-300 rounded-lg text-sm font-medium"
+                        />
+                    </div>
+
+                    {goalMode === 'manual' && (
+                        <div className="animate-fade-in">
+                            <label className="block text-xs font-bold text-slate-500 mb-1">{t('ind.form_target')}</label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-2.5 text-slate-400 text-xs font-bold">{t('common.currency')}</span>
+                                <input 
+                                    type="number" 
+                                    value={targetAmount} 
+                                    onChange={(e) => setTargetAmount(Number(e.target.value))}
+                                    className="w-full p-2 pl-10 border border-slate-300 rounded-lg text-lg font-bold text-purple-700"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {goalMode === 'date' && (
+                        <div className="animate-fade-in">
+                            <label className="block text-xs font-bold text-slate-500 mb-1">End Date</label>
+                            <input 
+                                 type="date" 
+                                 value={endDate} 
+                                 onChange={(e) => setEndDate(e.target.value)}
+                                 className="w-full p-2 border border-slate-300 rounded-lg text-sm font-medium"
+                            />
+                            <div className="mt-3 text-xs text-slate-500 flex justify-between items-center bg-white p-2 rounded border border-slate-100">
+                                <span>Estimated Saves:</span>
+                                <span className="font-bold text-slate-800">{occurrences} times</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {goalMode === 'count' && (
+                        <div className="animate-fade-in">
+                            <label className="block text-xs font-bold text-slate-500 mb-1">Number of times to save</label>
+                            <input 
+                                 type="number" 
+                                 value={occurrences} 
+                                 onChange={(e) => setOccurrences(Number(e.target.value))}
+                                 className="w-full p-2 border border-slate-300 rounded-lg text-lg font-bold text-slate-800"
+                            />
+                             <div className="mt-3 text-xs text-slate-500 flex justify-between items-center bg-white p-2 rounded border border-slate-100">
+                                <span>Est. End Date:</span>
+                                <span className="font-bold text-slate-800">{new Date(endDate).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
+            {/* Summary Footer */}
+            <div className="bg-purple-50 border border-purple-100 p-4 rounded-xl flex items-center justify-between">
+                <div>
+                     <div className="text-xs text-purple-600 font-bold uppercase mb-1">Total Accumulated</div>
+                     <div className="text-2xl font-bold text-purple-800">{formatCurrency(targetAmount)}</div>
+                </div>
+                <div className="bg-white p-2 rounded-full text-purple-500 shadow-sm">
+                    <Calculator size={20} />
+                </div>
+            </div>
+
+            {/* Method */}
             <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">{t('ind.form_method')}</label>
                 <div className="grid grid-cols-3 gap-2">
@@ -272,13 +413,13 @@ const IndividualDashboard: React.FC = () => {
                         <button
                             key={m.id}
                             onClick={() => setMethod(m.id)}
-                            className={`py-3 px-2 rounded-xl text-xs font-bold border flex flex-col items-center gap-1 transition-all ${
+                            className={`py-2 px-2 rounded-lg text-xs font-bold border flex flex-col items-center gap-1 transition-all ${
                                 method === m.id
-                                ? 'bg-slate-900 text-white border-slate-900' 
+                                ? 'bg-slate-800 text-white border-slate-800' 
                                 : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
                             }`}
                         >
-                            <m.icon size={16} />
+                            <m.icon size={14} />
                             {m.label}
                         </button>
                     ))}

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, PlusCircle, Calculator, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank, Globe, ArrowLeft, Hexagon, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Calculator, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank, Globe, ArrowLeft, Hexagon, TrendingUp, Moon, Sun } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { checkAndGenerateNotifications, markNotificationRead } from '../services/notificationService';
@@ -18,8 +18,24 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotif, setShowNotif] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  
+  // Theme State
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
+    // Theme Initialization
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        setIsDark(true);
+        document.documentElement.classList.add('dark');
+    } else {
+        setIsDark(false);
+        document.documentElement.classList.remove('dark');
+    }
+
+    // Notifications
     checkAndGenerateNotifications().then(notifs => {
       setNotifications(notifs);
     });
@@ -34,6 +50,18 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [activeView]);
+
+  const toggleTheme = () => {
+      if (isDark) {
+          document.documentElement.classList.remove('dark');
+          localStorage.setItem('theme', 'light');
+          setIsDark(false);
+      } else {
+          document.documentElement.classList.add('dark');
+          localStorage.setItem('theme', 'dark');
+          setIsDark(true);
+      }
+  };
 
   const handleMarkRead = (id: string) => {
     const updated = markNotificationRead(id);
@@ -71,7 +99,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
   );
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row font-sans text-slate-900 bg-slate-50">
+    <div className="min-h-screen flex flex-col md:flex-row font-sans text-slate-900 bg-slate-50 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       
       {/* Mobile Header - Sticky */}
       <div className="md:hidden bg-slate-900/95 backdrop-blur-md border-b border-slate-800 p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
@@ -90,6 +118,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
             <BrandLogo size="small" />
         </div>
         <div className="flex items-center gap-2">
+             <button onClick={toggleTheme} className="p-2 text-slate-400 hover:bg-slate-800 hover:text-white rounded-full transition-colors">
+                {isDark ? <Sun size={20} /> : <Moon size={20} />}
+             </button>
              <button onClick={toggleLanguage} className="p-2 text-slate-400 hover:bg-slate-800 hover:text-white rounded-full transition-colors font-bold text-xs flex items-center justify-center w-8 h-8 border border-slate-700">
                 {language.toUpperCase()}
              </button>
@@ -185,6 +216,13 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
             
             <div className="flex gap-2">
                  <button 
+                    onClick={toggleTheme}
+                    className="flex-1 bg-slate-800 hover:bg-slate-700 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                    title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                >
+                    {isDark ? <Sun size={16} /> : <Moon size={16} />}
+                </button>
+                 <button 
                     onClick={() => setShowNotif(!showNotif)}
                     className="flex-1 bg-slate-800 hover:bg-slate-700 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors relative"
                     title={t('nav.notifications')}
@@ -204,7 +242,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
 
       {/* Mobile Bottom Nav - Hidden when in 'create' view */}
       {activeView !== 'create' && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 z-40 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 z-40 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
             <div className="flex justify-around items-center p-2">
             <MobileNavBtn active={activeView === 'dashboard' || activeView === 'detail'} onClick={() => onChangeView('dashboard')} icon={<LayoutDashboard size={24} />} />
             <MobileNavBtn active={activeView === 'individual'} onClick={() => onChangeView('individual')} icon={<PiggyBank size={24} />} />
@@ -224,22 +262,22 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
 
       {/* Notifications Overlay */}
       {showNotif && (
-          <div ref={notifRef} className="fixed top-16 right-4 md:left-72 md:top-auto md:bottom-24 md:w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 animate-fade-in overflow-hidden ring-1 ring-black/5">
-             <div className="p-4 bg-slate-50/80 backdrop-blur border-b border-slate-100 flex justify-between items-center">
-                 <h3 className="font-bold text-slate-900 flex items-center gap-2"><Bell size={16} className="text-emerald-600" /> {t('nav.notifications')}</h3>
-                 <button onClick={() => setShowNotif(false)}><X size={16} className="text-slate-400 hover:text-slate-600"/></button>
+          <div ref={notifRef} className="fixed top-16 right-4 md:left-72 md:top-auto md:bottom-24 md:w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 z-50 animate-fade-in overflow-hidden ring-1 ring-black/5">
+             <div className="p-4 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                 <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2"><Bell size={16} className="text-emerald-600" /> {t('nav.notifications')}</h3>
+                 <button onClick={() => setShowNotif(false)}><X size={16} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"/></button>
              </div>
              <div className="max-h-80 overflow-y-auto custom-scrollbar">
                 {notifications.length === 0 ? (
                     <div className="p-8 text-center text-slate-400 text-sm">{t('nav.no_notifications')}</div>
                 ) : (
                     notifications.map(n => (
-                        <div key={n.id} className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors ${!n.read ? 'bg-emerald-50/30' : ''}`}>
+                        <div key={n.id} className={`p-4 border-b border-slate-50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${!n.read ? 'bg-emerald-50/30 dark:bg-emerald-900/20' : ''}`}>
                              <div className="flex justify-between items-start mb-1">
-                                 <h4 className={`text-sm font-bold ${n.type === 'warning' ? 'text-amber-600' : 'text-slate-800'}`}>{n.title}</h4>
+                                 <h4 className={`text-sm font-bold ${n.type === 'warning' ? 'text-amber-600 dark:text-amber-400' : 'text-slate-800 dark:text-slate-200'}`}>{n.title}</h4>
                                  {!n.read && <button onClick={() => handleMarkRead(n.id)} title={t('nav.mark_read')}><Check size={14} className="text-emerald-500" /></button>}
                              </div>
-                             <p className="text-xs text-slate-600 mb-2 leading-relaxed">{n.message}</p>
+                             <p className="text-xs text-slate-600 dark:text-slate-400 mb-2 leading-relaxed">{n.message}</p>
                              <div className="text-[10px] text-slate-400 font-medium">{new Date(n.date).toLocaleDateString()}</div>
                         </div>
                     ))
@@ -249,7 +287,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
       )}
 
       {/* Main Content Area - Native Scrolling enabled via min-h-screen */}
-      <main className="flex-1 md:ml-72 w-full min-h-screen pb-24 md:pb-12 bg-slate-50">
+      <main className="flex-1 md:ml-72 w-full min-h-screen pb-24 md:pb-12 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
         <div className="p-4 md:p-8 max-w-6xl mx-auto">
           {children}
         </div>
@@ -277,7 +315,7 @@ const NavButton: React.FC<{active: boolean, onClick: () => void, icon: React.Rea
 );
 
 const MobileNavBtn: React.FC<{active: boolean, onClick: () => void, icon: React.ReactNode}> = ({ active, onClick, icon }) => (
-    <button onClick={onClick} className={`p-3 rounded-2xl transition-all ${active ? 'text-emerald-600 bg-emerald-50 scale-110 shadow-sm' : 'text-slate-400 active:scale-95'}`}>
+    <button onClick={onClick} className={`p-3 rounded-2xl transition-all ${active ? 'text-emerald-600 bg-emerald-50 scale-110 shadow-sm' : 'text-slate-400 dark:text-slate-500 active:scale-95'}`}>
         {icon}
     </button>
 );
