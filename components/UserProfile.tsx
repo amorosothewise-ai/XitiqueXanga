@@ -141,6 +141,7 @@ const UserProfile: React.FC = () => {
           };
           reader.readAsDataURL(file);
       }
+      // Reset input so selecting the same file works again
       if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -149,7 +150,7 @@ const UserProfile: React.FC = () => {
       
       setSelectedImageSrc(null); 
       setIsUploading(true);
-      setImageLoadError(false); // Reset error state in anticipation
+      setImageLoadError(false); 
       
       try {
           const publicUrl = await uploadAvatar(profile.id, blob);
