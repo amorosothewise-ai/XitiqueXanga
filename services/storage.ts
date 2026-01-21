@@ -124,6 +124,15 @@ export const saveXitique = async (xitique: Xitique): Promise<void> => {
   }
 };
 
+export const deleteParticipant = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('participants')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+};
+
 export const deleteXitique = async (id: string): Promise<void> => {
   const { error } = await supabase
     .from('xitiques')

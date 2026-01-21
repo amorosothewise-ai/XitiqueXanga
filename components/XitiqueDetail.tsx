@@ -4,7 +4,7 @@ import { Xitique, Participant, TransactionType, XitiqueStatus } from '../types';
 import { formatDate, addPeriod } from '../services/dateUtils';
 import { formatCurrency } from '../services/formatUtils';
 import { analyzeFairness } from '../services/geminiService';
-import { saveXitique } from '../services/storage';
+import { saveXitique, deleteParticipant } from '../services/storage';
 import { createTransaction, calculateCyclePot, calculateDynamicPot } from '../services/financeLogic';
 import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save, Download, ThumbsUp, Hash, XCircle, FileText, Activity, PenTool, PlayCircle, Lock, Unlock, Shuffle, Coins } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -300,6 +300,14 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
   };
 
   const executeDeleteMember = async (id: string) => {
+      try {
+          await deleteParticipant(id);
+      } catch (err) {
+          console.error("Failed to delete participant from DB", err);
+          addToast(t('common.error'), 'error');
+          return;
+      }
+
       // 1. Filter
       const remainingParticipants = xitique.participants.filter(p => p.id !== id);
       
@@ -1229,15 +1237,13 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                        </div>
                    ) : (
                        <>
-                          {!paymentsStarted && (
-                              <button 
-                                  onClick={(e) => { e.stopPropagation(); handleDeleteMemberClick(p); }}
-                                  className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-100"
-                                  title={t('detail.remove_member_title') || "Remove"}
-                              >
-                                  <Trash size={18} />
-                              </button>
-                          )}
+                          <button 
+                              onClick={(e) => { e.stopPropagation(); handleDeleteMemberClick(p); }}
+                              className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-100"
+                              title={t('detail.remove_member_title') || "Remove"}
+                          >
+                              <Trash size={18} />
+                          </button>
                           <button 
                               onClick={() => handleToggleClick(p.id)}
                               disabled={isCompleted}
