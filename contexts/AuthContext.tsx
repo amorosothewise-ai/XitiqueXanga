@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserProfile } from '../types';
 import { login as apiLogin, loginWithGoogle as apiLoginGoogle, register as apiRegister, logout as apiLogout } from '../services/authService';
@@ -48,12 +47,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // 1. Check active session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        if (!session.user.email_confirmed_at) {
-            await supabase.auth.signOut();
-            setLoading(false);
-        } else {
-            mapAndSetUser(session.user);
-        }
+        // Relaxed email check for prototype
+        mapAndSetUser(session.user);
       } else {
         setLoading(false);
       }
@@ -62,14 +57,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // 2. Listen for changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        if (!session.user.email_confirmed_at) {
-            // If user logs in but isn't verified (e.g. via strict session restoration)
-            await supabase.auth.signOut();
-            setUser(null);
-            setLoading(false);
-        } else {
-            mapAndSetUser(session.user);
-        }
+        // Relaxed email check for prototype
+        mapAndSetUser(session.user);
       } else {
         setUser(null);
         setLoading(false);

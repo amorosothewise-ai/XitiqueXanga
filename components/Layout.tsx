@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, PlusCircle, Calculator, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank, Globe, ArrowLeft, Hexagon, TrendingUp, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Calculator, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank, ArrowLeft, Hexagon, TrendingUp, Moon, Sun, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { checkAndGenerateNotifications, markNotificationRead } from '../services/notificationService';
@@ -12,21 +11,54 @@ interface LayoutProps {
   onChangeView: (view: string) => void;
 }
 
+const BrandLogo = ({ size = 'normal' }: { size?: 'normal' | 'small' }) => (
+  <div className={`flex items-center gap-2 ${size === 'small' ? 'scale-90' : ''}`}>
+      <div className="relative flex items-center justify-center">
+          <div className="bg-gradient-to-br from-emerald-400 to-cyan-600 rounded-lg p-1.5 shadow-lg shadow-emerald-500/20">
+              <Hexagon size={size === 'small' ? 20 : 24} className="text-white fill-emerald-500/20" strokeWidth={2.5} />
+          </div>
+          <TrendingUp size={size === 'small' ? 12 : 14} className="absolute text-white font-bold" />
+      </div>
+      <div>
+          <h1 className={`font-extrabold tracking-tight text-white leading-none ${size === 'small' ? 'text-lg' : 'text-xl'}`}>
+              Xitique <span className="text-emerald-400">Xanga</span>
+          </h1>
+      </div>
+  </div>
+);
+
 const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) => {
   const { t, language, setLanguage } = useLanguage();
-  const { user } = useAuth(); // Use live user data from context instead of local state
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotif, setShowNotif] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const [configError, setConfigError] = useState<string | null>(null);
   
   // Theme State
   const [isDark, setIsDark] = useState(false);
 
+  // Check Environment Configuration
   useEffect(() => {
-    // Theme Initialization
+    const apiKey = process.env.API_KEY;
+    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+    
+    // Check if keys are missing or still contain the placeholder text
+    if (!apiKey || apiKey.includes('your_gemini_api_key')) {
+        setConfigError("⚠️ Setup Required: Please add your real Gemini API Key to the .env file.");
+    } else if (!supabaseKey || supabaseKey.includes('your_supabase_anon_key')) {
+        setConfigError("⚠️ Setup Required: Please add your Supabase Anon Key to the .env file.");
+    } else {
+        setConfigError(null);
+    }
+  }, []);
+
+  // Initialize Theme
+  useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
+    // Check saved theme or system preference
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
         setIsDark(true);
         document.documentElement.classList.add('dark');
@@ -34,8 +66,10 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
         setIsDark(false);
         document.documentElement.classList.remove('dark');
     }
+  }, []); // Run once on mount
 
-    // Notifications
+  // Initialize Notifications & Click Listeners
+  useEffect(() => {
     checkAndGenerateNotifications().then(notifs => {
       setNotifications(notifs);
     });
@@ -72,7 +106,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
     setLanguage(language === 'pt' ? 'en' : 'pt');
   };
 
-  // Handle Mobile Back Navigation
   const handleMobileBack = () => {
       if (activeView !== 'dashboard') {
           onChangeView('dashboard');
@@ -80,23 +113,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
-
-  // Logo Component
-  const BrandLogo = ({ size = 'normal' }: { size?: 'normal' | 'small' }) => (
-    <div className={`flex items-center gap-2 ${size === 'small' ? 'scale-90' : ''}`}>
-        <div className="relative flex items-center justify-center">
-            <div className="bg-gradient-to-br from-emerald-400 to-cyan-600 rounded-lg p-1.5 shadow-lg shadow-emerald-500/20">
-                <Hexagon size={size === 'small' ? 20 : 24} className="text-white fill-emerald-500/20" strokeWidth={2.5} />
-            </div>
-            <TrendingUp size={size === 'small' ? 12 : 14} className="absolute text-white font-bold" />
-        </div>
-        <div>
-            <h1 className={`font-extrabold tracking-tight text-white leading-none ${size === 'small' ? 'text-lg' : 'text-xl'}`}>
-                Xitique <span className="text-emerald-400">Xanga</span>
-            </h1>
-        </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row font-sans text-slate-900 bg-slate-50 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
@@ -112,13 +128,17 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
                     <ArrowLeft size={24} />
                 </button>
             ) : (
-                <div className="w-2" /> // Spacer
+                <div className="w-2" />
             )}
             
             <BrandLogo size="small" />
         </div>
         <div className="flex items-center gap-2">
-             <button onClick={toggleTheme} className="p-2 text-slate-400 hover:bg-slate-800 hover:text-white rounded-full transition-colors">
+             <button 
+                onClick={toggleTheme} 
+                className={`p-2 rounded-full transition-all duration-300 ${isDark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-400 hover:text-white hover:bg-white/10'}`}
+                title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+             >
                 {isDark ? <Sun size={20} /> : <Moon size={20} />}
              </button>
              <button onClick={toggleLanguage} className="p-2 text-slate-400 hover:bg-slate-800 hover:text-white rounded-full transition-colors font-bold text-xs flex items-center justify-center w-8 h-8 border border-slate-700">
@@ -220,7 +240,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
                     className="flex-1 bg-slate-800 hover:bg-slate-700 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors"
                     title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
                 >
-                    {isDark ? <Sun size={16} /> : <Moon size={16} />}
+                    {isDark ? <Sun size={16} className="text-yellow-400" /> : <Moon size={16} />}
                 </button>
                  <button 
                     onClick={() => setShowNotif(!showNotif)}
@@ -240,7 +260,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
         </div>
       </nav>
 
-      {/* Mobile Bottom Nav - Hidden when in 'create' view */}
+      {/* Mobile Bottom Nav */}
       {activeView !== 'create' && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 z-40 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
             <div className="flex justify-around items-center p-2">
@@ -286,9 +306,15 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
           </div>
       )}
 
-      {/* Main Content Area - Native Scrolling enabled via min-h-screen */}
-      <main className="flex-1 md:ml-72 w-full min-h-screen pb-24 md:pb-12 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
-        <div className="p-4 md:p-8 max-w-6xl mx-auto">
+      {/* Main Content Area */}
+      <main className="flex-1 md:ml-72 w-full min-h-screen pb-24 md:pb-12 bg-slate-50 dark:bg-slate-950 transition-colors duration-300 flex flex-col">
+        {configError && (
+          <div className="bg-amber-500 text-white p-3 text-sm font-bold text-center flex items-center justify-center gap-2 shadow-md">
+            <AlertTriangle size={18} />
+            {configError}
+          </div>
+        )}
+        <div className="p-4 md:p-8 max-w-6xl mx-auto w-full flex-1">
           {children}
         </div>
       </main>

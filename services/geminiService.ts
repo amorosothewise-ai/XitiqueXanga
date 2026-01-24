@@ -11,8 +11,8 @@ export const analyzeFairness = async (xitique: Xitique): Promise<string> => {
   // Safe access to API Key inside the function
   const apiKey = process.env.API_KEY;
 
-  if (!apiKey) {
-    return "AI Analysis unavailable: API Key not configured (process.env.API_KEY missing).";
+  if (!apiKey || apiKey === 'your_gemini_api_key') {
+    return "AI Analysis unavailable: Please configure a valid API_KEY in your .env file.";
   }
 
   // Initialize client only when needed

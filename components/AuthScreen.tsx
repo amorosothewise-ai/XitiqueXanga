@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -95,7 +94,7 @@ const AuthScreen: React.FC = () => {
       </div>
 
       {/* Left: Brand / Hero */}
-      <div className="md:w-1/2 bg-slate-900 text-white p-8 md:p-16 flex flex-col justify-between relative overflow-hidden">
+      <div className="md:w-1/2 w-full bg-slate-900 text-white p-8 md:p-16 flex flex-col justify-between relative overflow-hidden min-h-[300px] md:min-h-screen">
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -ml-20 -mb-20"></div>
         
@@ -125,8 +124,8 @@ const AuthScreen: React.FC = () => {
       </div>
 
       {/* Right: Form */}
-      <div className="md:w-1/2 flex items-center justify-center p-6 bg-white md:bg-transparent">
-        <div className="w-full max-w-md space-y-8 bg-white md:p-10 rounded-3xl md:shadow-xl md:border border-slate-100">
+      <div className="md:w-1/2 w-full flex items-center justify-center p-4 md:p-8 bg-slate-50 md:bg-white/50">
+        <div className="w-full max-w-md space-y-8 bg-white p-8 md:p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-slate-900 mb-2">
               {isLogin ? t('auth.welcome') : t('auth.create')}
