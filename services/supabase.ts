@@ -1,20 +1,11 @@
+
 import { createClient } from '@supabase/supabase-js';
 
-// Access environment variables
-// Note: We are using process.env here as configured in vite.config.ts.
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+// Configuration for Project: uptvavelampytpivdzan
+const SUPABASE_URL = 'https://uptvavelampytpivdzan.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwdHZhdmVsYW1weXRwaXZkemFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5MjI4NzYsImV4cCI6MjA4NDQ5ODg3Nn0.SfTF4VPgKoBBTFyWpy905mA6cZY6ZYlNE-VY3j6r4ME';
 
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.warn('Supabase URL or Key missing. Check your .env file.');
-}
-
-// Fallback to dummy values to prevent "supabaseUrl is required" crash on app startup.
-// Authentication calls will fail gracefully instead of the app crashing white screen.
-const url = SUPABASE_URL || 'https://placeholder.supabase.co';
-const key = SUPABASE_KEY || 'placeholder-key';
-
-export const supabase = createClient(url, key, {
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

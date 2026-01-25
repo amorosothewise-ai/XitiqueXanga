@@ -1,3 +1,4 @@
+
 import { supabase } from './supabase';
 import { UserProfile, AuthSession } from '../types';
 
@@ -28,11 +29,11 @@ export const login = async (email: string, password: string): Promise<AuthSessio
   if (error) throw error;
   if (!data.user || !data.session) throw new Error('No session created');
 
-  // Mandatory Email Verification Check - DISABLED FOR PROTOTYPE
-  // if (!data.user.email_confirmed_at) {
-  //   await supabase.auth.signOut();
-  //   throw new Error('EMAIL_NOT_VERIFIED');
-  // }
+  // Mandatory Email Verification Check
+  if (!data.user.email_confirmed_at) {
+    await supabase.auth.signOut();
+    throw new Error('EMAIL_NOT_VERIFIED');
+  }
 
   return {
     user: mapUser(data.user),
@@ -66,11 +67,11 @@ export const register = async (name: string, email: string, password: string): P
 
   if (error) throw error;
   
-  // If email confirmation is enabled, enforce it strictly. - DISABLED FOR PROTOTYPE
-  // if (data.user && !data.user.email_confirmed_at) {
-  //    await supabase.auth.signOut(); // Ensure no unverified session persists
-  //    throw new Error('CONFIRMATION_REQUIRED');
-  // }
+  // If email confirmation is enabled, enforce it strictly.
+  if (data.user && !data.user.email_confirmed_at) {
+     await supabase.auth.signOut(); // Ensure no unverified session persists
+     throw new Error('CONFIRMATION_REQUIRED');
+  }
 
   if (!data.user || !data.session) throw new Error('Registration failed');
 
@@ -100,11 +101,11 @@ export const logout = async (): Promise<void> => {
 export const getSession = async () => {
   const { data } = await supabase.auth.getSession();
   if (data.session?.user) {
-    // Enforce verification check on session retrieval - DISABLED FOR PROTOTYPE
-    // if (!data.session.user.email_confirmed_at) {
-    //     await supabase.auth.signOut();
-    //     return null;
-    // }
+    // Enforce verification check on session retrieval
+    if (!data.session.user.email_confirmed_at) {
+        await supabase.auth.signOut();
+        return null;
+    }
     return {
        user: mapUser(data.session.user),
        token: data.session.access_token

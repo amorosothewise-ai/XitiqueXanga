@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, PlusCircle, Calculator, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank, ArrowLeft, Hexagon, TrendingUp, Moon, Sun, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Calculator, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank, ArrowLeft, Hexagon, TrendingUp, Moon, Sun } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { checkAndGenerateNotifications, markNotificationRead } from '../services/notificationService';
@@ -11,47 +11,15 @@ interface LayoutProps {
   onChangeView: (view: string) => void;
 }
 
-const BrandLogo = ({ size = 'normal' }: { size?: 'normal' | 'small' }) => (
-  <div className={`flex items-center gap-2 ${size === 'small' ? 'scale-90' : ''}`}>
-      <div className="relative flex items-center justify-center">
-          <div className="bg-gradient-to-br from-emerald-400 to-cyan-600 rounded-lg p-1.5 shadow-lg shadow-emerald-500/20">
-              <Hexagon size={size === 'small' ? 20 : 24} className="text-white fill-emerald-500/20" strokeWidth={2.5} />
-          </div>
-          <TrendingUp size={size === 'small' ? 12 : 14} className="absolute text-white font-bold" />
-      </div>
-      <div>
-          <h1 className={`font-extrabold tracking-tight text-white leading-none ${size === 'small' ? 'text-lg' : 'text-xl'}`}>
-              Xitique <span className="text-emerald-400">Xanga</span>
-          </h1>
-      </div>
-  </div>
-);
-
 const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) => {
   const { t, language, setLanguage } = useLanguage();
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotif, setShowNotif] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
-  const [configError, setConfigError] = useState<string | null>(null);
   
   // Theme State
   const [isDark, setIsDark] = useState(false);
-
-  // Check Environment Configuration
-  useEffect(() => {
-    const apiKey = process.env.API_KEY;
-    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
-    
-    // Check if keys are missing or still contain the placeholder text
-    if (!apiKey || apiKey.includes('your_gemini_api_key')) {
-        setConfigError("⚠️ Setup Required: Please add your real Gemini API Key to the .env file.");
-    } else if (!supabaseKey || supabaseKey.includes('your_supabase_anon_key')) {
-        setConfigError("⚠️ Setup Required: Please add your Supabase Anon Key to the .env file.");
-    } else {
-        setConfigError(null);
-    }
-  }, []);
 
   // Initialize Theme
   useEffect(() => {
@@ -113,6 +81,22 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const BrandLogo = ({ size = 'normal' }: { size?: 'normal' | 'small' }) => (
+    <div className={`flex items-center gap-2 ${size === 'small' ? 'scale-90' : ''}`}>
+        <div className="relative flex items-center justify-center">
+            <div className="bg-gradient-to-br from-emerald-400 to-cyan-600 rounded-lg p-1.5 shadow-lg shadow-emerald-500/20">
+                <Hexagon size={size === 'small' ? 20 : 24} className="text-white fill-emerald-500/20" strokeWidth={2.5} />
+            </div>
+            <TrendingUp size={size === 'small' ? 12 : 14} className="absolute text-white font-bold" />
+        </div>
+        <div>
+            <h1 className={`font-extrabold tracking-tight text-white leading-none ${size === 'small' ? 'text-lg' : 'text-xl'}`}>
+                Xitique <span className="text-emerald-400">Xanga</span>
+            </h1>
+        </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row font-sans text-slate-900 bg-slate-50 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
@@ -307,14 +291,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 md:ml-72 w-full min-h-screen pb-24 md:pb-12 bg-slate-50 dark:bg-slate-950 transition-colors duration-300 flex flex-col">
-        {configError && (
-          <div className="bg-amber-500 text-white p-3 text-sm font-bold text-center flex items-center justify-center gap-2 shadow-md">
-            <AlertTriangle size={18} />
-            {configError}
-          </div>
-        )}
-        <div className="p-4 md:p-8 max-w-6xl mx-auto w-full flex-1">
+      <main className="flex-1 md:ml-72 w-full min-h-screen pb-24 md:pb-12 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+        <div className="p-4 md:p-8 max-w-6xl mx-auto">
           {children}
         </div>
       </main>

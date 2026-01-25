@@ -1,10 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
-import { Xitique, Frequency, XitiqueStatus } from '../types';
-import { getXitiques } from '../services/storage';
+import { Xitique, Frequency, XitiqueStatus, XitiqueType } from '../types';
+import { getXitiques, getUserProfile } from '../services/storage';
 import { formatCurrency } from '../services/formatUtils';
 import { PlusCircle, ChevronRight, Wallet, Users, Loader2, Archive, Activity, ChevronLeft } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext';
 import FinancialTip from './FinancialTip';
 
 interface DashboardProps {
@@ -17,7 +17,7 @@ const ITEMS_PER_PAGE = 6;
 const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
   const [xitiques, setXitiques] = useState<Xitique[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const [user, setUser] = useState(getUserProfile());
   const { t } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
@@ -28,6 +28,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
       setLoading(true);
       const data = await getXitiques();
       setXitiques(data);
+      setUser(getUserProfile());
       setLoading(false);
     }
     loadData();
@@ -90,7 +91,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
             <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">
-                        {t('dash.greeting', `Olá, ${user?.name?.split(' ')[0] || 'User'}`).replace('{name}', user?.name?.split(' ')[0] || 'User')}
+                        {t('dash.greeting', `Olá, ${user.name.split(' ')[0]}`).replace('{name}', user.name.split(' ')[0])}
                     </h1>
                     <p className="text-slate-500 max-w-lg leading-relaxed">
                         {t('dash.subtitle_welcome', 'Here is an overview of your financial circles and savings progress.')}
