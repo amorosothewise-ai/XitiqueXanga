@@ -3,7 +3,6 @@ import { Transaction, TransactionType, Xitique, Participant } from '../types';
 
 /**
  * CORE PRINCIPLE: All balances must be derived from transactions.
- * Never rely on a stored 'currentBalance' property.
  */
 export const calculateBalance = (transactions: Transaction[]): number => {
   if (!transactions) return 0;
@@ -13,13 +12,10 @@ export const calculateBalance = (transactions: Transaction[]): number => {
       case TransactionType.DEPOSIT:
         return acc + tx.amount;
       case TransactionType.WITHDRAWAL:
-        // Money leaving the system (Individual)
         return acc - tx.amount;
       case TransactionType.PAYOUT: 
-        // Money leaving the system (Group Payout)
         return acc - tx.amount; 
       case TransactionType.PAYOUT_REVERSAL:
-        // A correction that cancels a previous payout.
         return acc + tx.amount;
       default:
         return acc;
@@ -28,32 +24,55 @@ export const calculateBalance = (transactions: Transaction[]): number => {
 };
 
 /**
- * Calculates the Total Pot for a single rotation cycle.
- * DEPRECATED for display logic in variable groups, but kept for legacy sum calculations.
+ * Calculates the Total Volume of the Cycle.
+ * In a Dynamic System, this is the sum of all individual Dynamic Pots.
+ * This represents the total amount of money that will change hands in one full rotation.
  */
 export const calculateCyclePot = (baseAmount: number, participants: Participant[]): number => {
-    return participants.reduce((sum, p) => {
-        return sum + (p.customContribution !== undefined ? p.customContribution : baseAmount);
+    // Construct a temporary Xitique-like object to reuse the dynamic logic
+    const tempXitique = { amount: baseAmount, participants } as Xitique;
+    
+    return participants.reduce((totalVolume, participant) => {
+        return totalVolume + calculateDynamicPot(tempXitique, participant);
     }, 0);
 };
 
-// --- VARIABLE CONTRIBUTION LOGIC ---
+// --- DYNAMIC / VARIABLE CONTRIBUTION LOGIC ---
 
 /**
- * Determines the contribution amount required from EVERYONE for a specific round.
- * Rule: The round amount is dictated by the Beneficiary's base contribution.
+ * Determines the contribution amount required from a specific PAYER 
+ * for a specific RECIPIENT's round.
+ * 
+ * RULE: The Payer contributes the lesser of:
+ * 1. Their own contribution limit (Payer Cap)
+ * 2. The Recipient's contribution limit (Recipient Cap)
  */
-export const getRoundBaseAmount = (xitiqueBase: number, beneficiary: Participant): number => {
-    return beneficiary.customContribution !== undefined ? beneficiary.customContribution : xitiqueBase;
+export const getContributionForRound = (
+    baseAmount: number, 
+    payer: Participant, 
+    recipient: Participant
+): number => {
+    const payerCap = payer.customContribution !== undefined ? payer.customContribution : baseAmount;
+    const recipientCap = recipient.customContribution !== undefined ? recipient.customContribution : baseAmount;
+    
+    return Math.min(payerCap, recipientCap);
 };
 
 /**
- * Calculates the total payout a specific beneficiary will receive.
- * Formula: BeneficiaryBase * NumberOfParticipants
+ * Calculates the total payout a specific beneficiary will receive (GROSS POT).
+ * Formula: Sum of (Min(PayerLimit, BeneficiaryLimit)) for ALL participants (including self).
+ * 
+ * Example (A=7k, B=7k, C=5k):
+ * - If A receives: A(7k) + B(7k) + C(5k) = 19k.
+ * - If C receives: A(5k) + B(5k) + C(5k) = 15k.
  */
 export const calculateDynamicPot = (xitique: Xitique, beneficiary: Participant): number => {
-    const roundBase = getRoundBaseAmount(xitique.amount, beneficiary);
-    return roundBase * xitique.participants.length;
+    return xitique.participants.reduce((pot, payer) => {
+        // We include the beneficiary's own contribution in the "Pot Total"
+        // because the Pot represents the total accumulated value for that period.
+        const contribution = getContributionForRound(xitique.amount, payer, beneficiary);
+        return pot + contribution;
+    }, 0);
 };
 
 /**

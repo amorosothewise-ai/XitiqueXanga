@@ -39,18 +39,18 @@ const IndividualDashboard: React.FC = () => {
     action: () => {}
   });
 
-  // Form State
+  // Form State - Using string | number for inputs to avoid leading zero issues
   const [name, setName] = useState('');
-  const [amount, setAmount] = useState(100);
+  const [amount, setAmount] = useState<number | string>(''); // Initial empty string
   const [frequency, setFrequency] = useState<Frequency>(Frequency.DAILY);
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.MPESA);
   
   // New Planning State
   const [goalMode, setGoalMode] = useState<'manual' | 'date' | 'count'>('manual');
-  const [targetAmount, setTargetAmount] = useState(5000); // Result
+  const [targetAmount, setTargetAmount] = useState<number | string>(''); // Initial empty string
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(addPeriod(new Date().toISOString(), Frequency.DAILY, 30).split('T')[0]);
-  const [occurrences, setOccurrences] = useState(10);
+  const [occurrences, setOccurrences] = useState<number | string>(10);
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -62,13 +62,18 @@ const IndividualDashboard: React.FC = () => {
   useEffect(() => {
     if (goalMode === 'manual') return;
 
+    const numAmount = Number(amount) || 0;
+    const numOccurrences = Number(occurrences) || 0;
+
     if (goalMode === 'count') {
         // Calculate Target and End Date based on Count
-        const total = amount * occurrences;
-        setTargetAmount(total);
-        // Estimate end date
-        const calculatedEnd = addPeriod(startDate, frequency, occurrences);
-        setEndDate(calculatedEnd.split('T')[0]);
+        if (numAmount > 0 && numOccurrences > 0) {
+            const total = numAmount * numOccurrences;
+            setTargetAmount(total);
+            // Estimate end date
+            const calculatedEnd = addPeriod(startDate, frequency, numOccurrences);
+            setEndDate(calculatedEnd.split('T')[0]);
+        }
     } else if (goalMode === 'date') {
         // Calculate Count and Target based on Date Range
         const start = new Date(startDate);
@@ -83,11 +88,12 @@ const IndividualDashboard: React.FC = () => {
             if (frequency === Frequency.WEEKLY) count = Math.floor(diffDays / 7);
             if (frequency === Frequency.MONTHLY) count = Math.floor(diffDays / 30);
             
-            setOccurrences(count);
-            setTargetAmount(count * amount);
-        } else {
-            setOccurrences(0);
-            setTargetAmount(0);
+            if (count > 0) {
+                setOccurrences(count);
+                if (numAmount > 0) {
+                    setTargetAmount(count * numAmount);
+                }
+            }
         }
     }
   }, [amount, frequency, startDate, endDate, occurrences, goalMode]);
@@ -105,16 +111,24 @@ const IndividualDashboard: React.FC = () => {
         return;
     }
 
-    if (targetAmount <= 0) {
+    const finalTarget = Number(targetAmount) || 0;
+    const finalAmount = Number(amount) || 0;
+
+    if (finalTarget <= 0) {
         addToast('Accumulated amount must be greater than 0', 'error');
+        return;
+    }
+    
+    if (finalAmount <= 0) {
+        addToast('Contribution amount must be greater than 0', 'error');
         return;
     }
 
     const newStick = createNewXitique({
       name,
       type: XitiqueType.INDIVIDUAL,
-      targetAmount,
-      amount,
+      targetAmount: finalTarget,
+      amount: finalAmount,
       frequency,
       method,
       startDate: new Date(startDate).toISOString(),
@@ -128,8 +142,8 @@ const IndividualDashboard: React.FC = () => {
         loadSticks();
         // Reset defaults
         setName('');
-        setTargetAmount(5000);
-        setAmount(100);
+        setTargetAmount('');
+        setAmount('');
         setOccurrences(10);
         setGoalMode('manual');
     } catch(err) {
@@ -261,7 +275,7 @@ const IndividualDashboard: React.FC = () => {
                     value={name} 
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Ex: Novo Telefone"
-                    className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all font-medium"
+                    className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all font-medium text-base"
                 />
             </div>
 
@@ -288,12 +302,14 @@ const IndividualDashboard: React.FC = () => {
                 <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">{t('ind.form_contribution')}</label>
                     <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-slate-400 text-xs font-bold">{t('common.currency')}</span>
+                        <span className="absolute left-3 top-4 text-slate-400 text-xs font-bold">{t('common.currency')}</span>
                         <input 
                             type="number" 
+                            inputMode="decimal"
                             value={amount} 
-                            onChange={(e) => setAmount(Number(e.target.value))}
-                            className="w-full p-2 pl-10 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none font-bold text-slate-900"
+                            onChange={(e) => setAmount(e.target.value)}
+                            placeholder="0"
+                            className="w-full p-3 pl-10 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none font-bold text-slate-900 text-lg"
                         />
                     </div>
                 </div>
@@ -337,7 +353,7 @@ const IndividualDashboard: React.FC = () => {
                              type="date" 
                              value={startDate} 
                              onChange={(e) => setStartDate(e.target.value)}
-                             className="w-full p-2 border border-slate-300 rounded-lg text-sm font-medium"
+                             className="w-full p-3 border border-slate-300 rounded-lg text-sm font-medium bg-white"
                         />
                     </div>
 
@@ -345,12 +361,14 @@ const IndividualDashboard: React.FC = () => {
                         <div className="animate-fade-in">
                             <label className="block text-xs font-bold text-slate-500 mb-1">{t('ind.form_target')}</label>
                             <div className="relative">
-                                <span className="absolute left-3 top-2.5 text-slate-400 text-xs font-bold">{t('common.currency')}</span>
+                                <span className="absolute left-3 top-4 text-slate-400 text-xs font-bold">{t('common.currency')}</span>
                                 <input 
                                     type="number" 
+                                    inputMode="decimal"
                                     value={targetAmount} 
-                                    onChange={(e) => setTargetAmount(Number(e.target.value))}
-                                    className="w-full p-2 pl-10 border border-slate-300 rounded-lg text-lg font-bold text-purple-700"
+                                    onChange={(e) => setTargetAmount(e.target.value)}
+                                    placeholder="0"
+                                    className="w-full p-3 pl-10 border border-slate-300 rounded-lg text-lg font-bold text-purple-700"
                                 />
                             </div>
                         </div>
@@ -363,11 +381,11 @@ const IndividualDashboard: React.FC = () => {
                                  type="date" 
                                  value={endDate} 
                                  onChange={(e) => setEndDate(e.target.value)}
-                                 className="w-full p-2 border border-slate-300 rounded-lg text-sm font-medium"
+                                 className="w-full p-3 border border-slate-300 rounded-lg text-sm font-medium bg-white"
                             />
                             <div className="mt-3 text-xs text-slate-500 flex justify-between items-center bg-white p-2 rounded border border-slate-100">
                                 <span>Estimated Saves:</span>
-                                <span className="font-bold text-slate-800">{occurrences} times</span>
+                                <span className="font-bold text-slate-800">{occurrences || 0} times</span>
                             </div>
                         </div>
                     )}
@@ -377,9 +395,11 @@ const IndividualDashboard: React.FC = () => {
                             <label className="block text-xs font-bold text-slate-500 mb-1">Number of times to save</label>
                             <input 
                                  type="number" 
+                                 inputMode="numeric"
                                  value={occurrences} 
-                                 onChange={(e) => setOccurrences(Number(e.target.value))}
-                                 className="w-full p-2 border border-slate-300 rounded-lg text-lg font-bold text-slate-800"
+                                 onChange={(e) => setOccurrences(e.target.value)}
+                                 placeholder="0"
+                                 className="w-full p-3 border border-slate-300 rounded-lg text-lg font-bold text-slate-800"
                             />
                              <div className="mt-3 text-xs text-slate-500 flex justify-between items-center bg-white p-2 rounded border border-slate-100">
                                 <span>Est. End Date:</span>
@@ -394,7 +414,7 @@ const IndividualDashboard: React.FC = () => {
             <div className="bg-purple-50 border border-purple-100 p-4 rounded-xl flex items-center justify-between">
                 <div>
                      <div className="text-xs text-purple-600 font-bold uppercase mb-1">Total Accumulated</div>
-                     <div className="text-2xl font-bold text-purple-800">{formatCurrency(targetAmount)}</div>
+                     <div className="text-2xl font-bold text-purple-800">{formatCurrency(Number(targetAmount) || 0)}</div>
                 </div>
                 <div className="bg-white p-2 rounded-full text-purple-500 shadow-sm">
                     <Calculator size={20} />

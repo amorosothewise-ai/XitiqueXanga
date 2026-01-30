@@ -6,7 +6,7 @@ import { formatCurrency } from '../services/formatUtils';
 import { analyzeFairness } from '../services/geminiService';
 import { saveXitique, deleteParticipant } from '../services/storage';
 import { createTransaction, calculateCyclePot, calculateDynamicPot } from '../services/financeLogic';
-import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save, Download, ThumbsUp, Hash, XCircle, FileText, Activity, PenTool, PlayCircle, Lock, Unlock, Shuffle, Coins, Settings, RotateCcw } from 'lucide-react';
+import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save, Download, ThumbsUp, Hash, XCircle, FileText, Activity, PenTool, PlayCircle, Lock, Unlock, Shuffle, Coins, Settings, RotateCcw, ArrowDownRight } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import FinancialTip from './FinancialTip';
@@ -57,6 +57,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
   const [_, setForceUpdate] = useState(0); // To trigger re-renders on mutation
 
   // Derived State
+  // Note: totalPotentialFlow now represents the sum of all dynamic payouts in the cycle
   const totalPotentialFlow = calculateCyclePot(xitique.amount, xitique.participants); 
   const hasUnequalContributions = xitique.participants.some(p => p.customContribution !== undefined && p.customContribution !== xitique.amount);
   const progressPercentage = (xitique.participants.filter(p => p.received).length / xitique.participants.length) * 100;
@@ -109,7 +110,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
           case XitiqueStatus.COMPLETED: 
             return { color: 'bg-indigo-500', textColor: 'text-indigo-50', text: 'Concluído', icon: <CheckCircle2 size={16}/> };
           case XitiqueStatus.RISK: 
-            return { color: 'bg-rose-500', textColor: 'text-rose-50', text: 'Risco', icon: <AlertTriangle size={16}/> };
+            return { color: 'bg-rose-500', textColor: 'text-rose-50', text: 'Dinâmico', icon: <AlertTriangle size={16}/> };
           default: 
             return { color: 'bg-slate-500', textColor: 'text-slate-50', text: status, icon: <FileText size={16}/> };
       }
@@ -573,14 +574,14 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
             )}
 
             <div className="flex flex-wrap gap-4">
-                {/* Contribution Amount */}
+                {/* Cycle Volume / Pot */}
                 <div className={`flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10 relative ${isGlobalEditMode ? 'bg-slate-800 border-slate-600' : ''}`}>
                     <div className="bg-emerald-400/20 p-2 rounded-lg">
                         <DollarSign size={20} className="text-emerald-400" />
                     </div>
                     <div>
                         <div className="text-xs text-slate-300 uppercase font-semibold flex items-center gap-2">
-                            {t('detail.contribution_per_person')}
+                            Volume Total do Ciclo
                         </div>
                         {isGlobalEditMode ? (
                              <input 
@@ -590,7 +591,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                                 className="bg-transparent border-b border-slate-500 w-24 text-xl font-bold text-white focus:outline-none focus:border-emerald-500"
                              />
                         ) : (
-                             <div className="text-xl font-bold">{formatCurrency(xitique.amount)}</div>
+                             <div className="text-xl font-bold">{formatCurrency(totalPotentialFlow)}</div>
                         )}
                     </div>
                 </div>
@@ -721,6 +722,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
               const isEditing = editForm?.id === p.id;
               const isLocked = lockedIds.has(p.id);
               const receivableAmount = calculateDynamicPot(xitique, p);
+              const personalCap = p.customContribution !== undefined ? p.customContribution : xitique.amount;
               const isVariableAmount = p.customContribution !== undefined && p.customContribution !== xitique.amount;
               
               return (
@@ -785,7 +787,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                              </div>
                              <div className="flex gap-2">
                                 <div className="relative w-32">
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Contribuição (MT)</label>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Capacidade (MT)</label>
                                     <span className="absolute left-2 bottom-2.5 text-xs font-bold text-slate-400">MT</span>
                                     <input 
                                         type="number"
@@ -818,8 +820,8 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                                 </h3>
                                 {p.received && <CheckCircle2 size={16} className="text-emerald-500" />}
                                 {isVariableAmount && (
-                                    <div className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 border border-indigo-200 shadow-sm">
-                                        <Coins size={10} /> {formatCurrency(p.customContribution!)}
+                                    <div className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 border border-rose-200 shadow-sm" title="Capacidade de Contribuição Mensal">
+                                        <ArrowDownRight size={10} /> Cap: {formatCurrency(personalCap)}
                                     </div>
                                 )}
                                 {isGlobalEditMode && <Pencil size={12} className="text-slate-400" />}
@@ -829,8 +831,8 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                                     <Calendar size={12} />
                                     {p.payoutDate ? formatDate(p.payoutDate) : t('detail.date_tbd')}
                                 </div>
-                                <div className="flex items-center gap-1 font-mono font-medium text-slate-400">
-                                    <DollarSign size={12} /> {formatCurrency(receivableAmount)}
+                                <div className="flex items-center gap-1 font-mono font-bold text-emerald-600" title="Valor a Receber (Pote Dinâmico)">
+                                    <DollarSign size={12} /> Recebe: {formatCurrency(receivableAmount)}
                                 </div>
                             </div>
                         </div>

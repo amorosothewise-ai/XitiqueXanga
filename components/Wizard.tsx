@@ -14,21 +14,30 @@ interface WizardProps {
   initialData?: Xitique | null; 
 }
 
+// Helper interface for local state with a stable ID for rendering
+interface ParticipantInput {
+    tempId: string;
+    name: string;
+    amount: number | string;
+}
+
 const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) => {
   const { t } = useLanguage();
   const { addToast } = useToast();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
-  const [amount, setAmount] = useState<number | string>(100); // Allow string for editing
+  const [amount, setAmount] = useState<number | string>(''); // Empty by default to avoid leading 0
   const [frequency, setFrequency] = useState<Frequency>(Frequency.MONTHLY);
   const [method, setMethod] = useState<PaymentMethod>(PaymentMethod.MPESA);
   const [contributionMode, setContributionMode] = useState<ContributionMode>(ContributionMode.UNIFORM);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   
-  // Participants now hold both name and specific amount (string | number to allow clearing input)
-  // Initialize with empty string for amount to avoid "0" trap
-  const [participantsData, setParticipantsData] = useState<{name: string, amount: number | string}[]>([{name: '', amount: ''}, {name: '', amount: ''}]);
+  // Participants now have a tempId for stable React keys
+  const [participantsData, setParticipantsData] = useState<ParticipantInput[]>([
+      { tempId: crypto.randomUUID(), name: '', amount: '' }, 
+      { tempId: crypto.randomUUID(), name: '', amount: '' }
+  ]);
   
   const [orderedParticipants, setOrderedParticipants] = useState<{name: string, amount: number}[]>([]);
   const [lockedIndices, setLockedIndices] = useState<Set<number>>(new Set());
@@ -50,6 +59,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
 
         // Extract names and amounts
         const pData = initialData.participants.map(p => ({
+            tempId: crypto.randomUUID(),
             name: p.name,
             amount: p.customContribution !== undefined ? p.customContribution : initialData.amount
         }));
@@ -63,7 +73,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
   // When contribution mode changes to uniform, reset all individual amounts to base amount
   useEffect(() => {
     if (contributionMode === ContributionMode.UNIFORM) {
-        setParticipantsData(prev => prev.map(p => ({ ...p, amount: amount })));
+        const val = amount === '' ? '' : amount;
+        setParticipantsData(prev => prev.map(p => ({ ...p, amount: val })));
     }
   }, [contributionMode, amount]);
 
@@ -92,8 +103,15 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
   }, [participantsData.length, step]);
 
   const handleAddParticipant = () => {
-    // Add new participant with empty amount to avoid persistent 0
-    setParticipantsData([...participantsData, { name: '', amount: contributionMode === ContributionMode.UNIFORM ? amount : '' }]);
+    // Add new participant with unique tempId
+    setParticipantsData([
+        ...participantsData, 
+        { 
+            tempId: crypto.randomUUID(), 
+            name: '', 
+            amount: contributionMode === ContributionMode.UNIFORM ? amount : '' 
+        }
+    ]);
   };
 
   const handleRemoveParticipant = (index: number) => {
@@ -185,7 +203,6 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
     let minCollisions = Infinity;
 
     // 3. Attempt shuffle multiple times to find best "derangement" (least overlap with previous cycle)
-    // If it's not a renewal, we run once. If it is, we try harder to be "smart".
     const maxAttempts = (initialData && availableSlots.length > 2) ? 20 : 1;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -215,7 +232,6 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
             bestShuffledPeople = currentShuffle;
         }
 
-        // If we found a perfect shuffle (0 collisions), stop trying early
         if (collisions === 0) break;
     }
 
@@ -274,6 +290,11 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
 
   const isRenewal = !!initialData;
 
+  // Calculate Pot Summary
+  const estimatedPot = contributionMode === ContributionMode.UNIFORM 
+    ? (Number(amount) || 0) * orderedParticipants.length
+    : orderedParticipants.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
   return (
     <div className="bg-white rounded-3xl shadow-xl overflow-hidden max-w-4xl mx-auto border border-slate-200 font-sans pb-0 relative flex flex-col h-[calc(100vh-80px)] md:h-auto">
       {/* Header */}
@@ -321,7 +342,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                         value={name} 
                         onChange={(e) => setName(e.target.value)}
                         placeholder={t('wiz.placeholder_name')}
-                        className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                        className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-base"
                         autoFocus
                     />
                 </div>
@@ -373,8 +394,10 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                     <span className="absolute left-4 top-4 text-slate-400 font-bold">{t('common.currency')}</span>
                     <input 
                         type="number" 
+                        inputMode="decimal"
                         value={amount} 
                         onChange={(e) => setAmount(e.target.value)}
+                        placeholder="0"
                         className="w-full p-4 pl-12 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-mono text-lg"
                     />
                     </div>
@@ -435,7 +458,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                     type="date" 
                     value={startDate} 
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                    className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-base"
                 />
                 </div>
             </div>
@@ -468,8 +491,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                 {participantsData.map((p, idx) => {
                     const projectedDate = addPeriod(startDate, frequency, idx);
                     return (
-                    // CARD LAYOUT for Mobile, Row for Desktop
-                    <div key={idx} className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 animate-fade-in bg-slate-50 md:bg-white p-4 md:p-0 rounded-xl border border-slate-200 md:border-0 shadow-sm md:shadow-none">
+                    // KEY FIX: Using p.tempId instead of idx ensures React tracks inputs correctly and prevents cursor jumping
+                    <div key={p.tempId} className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 animate-fade-in bg-slate-50 md:bg-white p-4 md:p-0 rounded-xl border border-slate-200 md:border-0 shadow-sm md:shadow-none">
                         
                         {/* Header Row on Mobile Card */}
                         <div className="flex items-center justify-between md:hidden mb-2">
@@ -480,8 +503,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Member {idx + 1}</span>
                              </div>
                              {participantsData.length > 2 && (
-                                <button onClick={() => handleRemoveParticipant(idx)} className="text-slate-300 hover:text-red-500">
-                                    <Trash2 size={16} />
+                                <button onClick={() => handleRemoveParticipant(idx)} className="text-slate-300 hover:text-red-500 p-2 -mr-2">
+                                    <Trash2 size={18} />
                                 </button>
                              )}
                         </div>
@@ -498,10 +521,11 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                                 placeholder={t('wiz.placeholder_member')}
                                 value={p.name}
                                 onChange={(e) => handleNameChange(idx, e.target.value)}
-                                className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                                className="w-full p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-base font-medium"
+                                autoComplete="off"
                             />
                              {/* Mobile Estimated Date */}
-                            <div className="md:hidden text-xs text-slate-400 mt-1 flex items-center gap-1">
+                            <div className="md:hidden text-xs text-slate-400 mt-1 flex items-center gap-1 pl-1">
                                 <Calendar size={10} /> 
                                 {t('wiz.est_date')}: <span className="text-slate-600 font-bold">{formatDate(projectedDate)}</span>
                             </div>
@@ -509,14 +533,15 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                         
                         {/* Variable Amount Input */}
                         {contributionMode === ContributionMode.VARIABLE && (
-                             <div className="relative w-full md:w-32 flex-shrink-0 mt-1 md:mt-0">
-                                <span className="absolute left-2 top-3 text-slate-400 text-xs font-bold">$</span>
+                             <div className="relative w-full md:w-32 flex-shrink-0 mt-2 md:mt-0">
+                                <span className="absolute left-3 top-4 text-slate-400 text-xs font-bold">$</span>
                                 <input 
                                     type="number" 
+                                    inputMode="decimal"
                                     value={p.amount} 
                                     onChange={(e) => handleAmountChange(idx, e.target.value)}
-                                    className="w-full pl-5 p-3 border border-indigo-200 bg-indigo-50/50 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-indigo-900 text-sm"
-                                    placeholder="Amount"
+                                    className="w-full pl-6 p-4 border border-indigo-200 bg-indigo-50/50 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-indigo-900 text-base"
+                                    placeholder="0"
                                 />
                              </div>
                         )}
@@ -542,7 +567,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
 
                 <button 
                 onClick={handleAddParticipant}
-                className="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center text-slate-500 font-bold hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all mt-4"
+                className="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center text-slate-500 font-bold hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all mt-4 text-base"
                 >
                 <UserPlus size={18} className="mr-2" /> {t('wiz.btn_add_member')}
                 </button>
@@ -676,11 +701,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
             <p className="text-slate-500 mb-8 max-w-md mx-auto leading-relaxed">
               {t('wiz.ready_desc')}
               <br />
-              {contributionMode === ContributionMode.UNIFORM ? (
-                  <><span className="text-slate-400 text-sm">{t('wiz.total_pot')}</span> <strong className="text-emerald-600 text-2xl">{t('common.currency')} {(Number(amount) || 0) * orderedParticipants.length}</strong></>
-              ) : (
-                   <span className="text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded">{t('wiz.mode_variable')}</span>
-              )}
+              <span className="text-slate-400 text-sm">{t('wiz.total_pot')}</span> <strong className="text-emerald-600 text-2xl">{t('common.currency')} {formatCurrency(estimatedPot).replace(' MT', '')}</strong>
             </p>
             
             <div className="bg-white border border-slate-200 p-8 rounded-2xl text-left shadow-sm max-w-lg mx-auto">
