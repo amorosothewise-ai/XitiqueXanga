@@ -103,15 +103,15 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
   const getStatusBadge = (status: XitiqueStatus) => {
       switch(status) {
           case XitiqueStatus.ACTIVE: 
-            return { color: 'bg-emerald-500', textColor: 'text-emerald-50', text: 'Ativo', icon: <Activity size={14}/> };
+            return { color: 'bg-emerald-500', textColor: 'text-emerald-50', text: 'Ativo', icon: <Activity size={16}/> };
           case XitiqueStatus.PLANNING: 
-            return { color: 'bg-blue-500', textColor: 'text-blue-50', text: 'Planejamento', icon: <PenTool size={14}/> };
+            return { color: 'bg-blue-500', textColor: 'text-blue-50', text: 'Planejamento', icon: <PenTool size={16}/> };
           case XitiqueStatus.COMPLETED: 
-            return { color: 'bg-indigo-500', textColor: 'text-indigo-50', text: 'Concluído', icon: <CheckCircle2 size={14}/> };
+            return { color: 'bg-indigo-500', textColor: 'text-indigo-50', text: 'Concluído', icon: <CheckCircle2 size={16}/> };
           case XitiqueStatus.RISK: 
-            return { color: 'bg-rose-500', textColor: 'text-rose-50', text: 'Risco', icon: <AlertTriangle size={14}/> };
+            return { color: 'bg-rose-500', textColor: 'text-rose-50', text: 'Risco', icon: <AlertTriangle size={16}/> };
           default: 
-            return { color: 'bg-slate-500', textColor: 'text-slate-50', text: status, icon: <FileText size={14}/> };
+            return { color: 'bg-slate-500', textColor: 'text-slate-50', text: status, icon: <FileText size={16}/> };
       }
   };
 
@@ -527,33 +527,34 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
         <div className="absolute right-0 top-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
         <div className="relative z-10">
-            {/* Status Badge */}
-            <div className="flex items-center gap-3 mb-4">
-                <span className="bg-white/10 backdrop-blur text-slate-300 border border-white/10 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">
-                    {xitique.frequency === 'WEEKLY' ? t('wiz.weekly') : xitique.frequency === 'MONTHLY' ? t('wiz.monthly') : t('wiz.daily')}
-                </span>
-                <span className={`${currentBadge.color} ${currentBadge.textColor} text-xs font-bold px-2 py-1 rounded uppercase tracking-wider flex items-center gap-1.5 shadow-sm`}>
-                    {currentBadge.icon} {currentBadge.text}
-                </span>
-                {isGlobalEditMode && <span className="bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded uppercase animate-pulse">MODO DE EDIÇÃO</span>}
+            {/* Header / Title / Status */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                 {isGlobalEditMode ? (
+                    <div className="flex-1">
+                        <label className="text-xs text-slate-400 font-bold uppercase block mb-1">Nome do Grupo</label>
+                        <input 
+                            type="text" 
+                            value={tempName}
+                            onChange={(e) => setTempName(e.target.value)}
+                            className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-3xl font-bold text-white w-full focus:ring-2 focus:ring-emerald-500 outline-none"
+                        />
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-2">
+                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight flex items-center gap-3">
+                            {xitique.name}
+                        </h1>
+                        <div className="flex items-center gap-2">
+                             <span className={`${currentBadge.color} ${currentBadge.textColor} text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-sm ring-1 ring-white/10`}>
+                                {currentBadge.icon} {currentBadge.text}
+                            </span>
+                            <span className="bg-white/10 backdrop-blur text-slate-300 border border-white/10 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">
+                                {xitique.frequency === 'WEEKLY' ? t('wiz.weekly') : xitique.frequency === 'MONTHLY' ? t('wiz.monthly') : t('wiz.daily')}
+                            </span>
+                        </div>
+                    </div>
+                )}
             </div>
-
-            {/* Title Editing */}
-            {isGlobalEditMode ? (
-                <div className="mb-6">
-                    <label className="text-xs text-slate-400 font-bold uppercase block mb-1">Nome do Grupo</label>
-                    <input 
-                        type="text" 
-                        value={tempName}
-                        onChange={(e) => setTempName(e.target.value)}
-                        className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-3xl font-bold text-white w-full focus:ring-2 focus:ring-emerald-500 outline-none"
-                    />
-                </div>
-            ) : (
-                <h1 className="text-4xl font-bold mb-6 tracking-tight flex items-center gap-3">
-                    {xitique.name}
-                </h1>
-            )}
 
             {/* Progress Bar */}
             {!isGlobalEditMode && (
@@ -655,29 +656,53 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
         <div className="space-y-4">
           
           {/* List Header / Filters */}
-          <div className="flex flex-col md:flex-row gap-3 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-             <div className="flex-1 relative">
-                 <Search className="absolute left-3 top-3 text-slate-400" size={18} />
-                 <input 
-                   type="text" 
-                   placeholder="Buscar membro ou data..." 
-                   className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium transition-all"
-                   value={searchTerm}
-                   onChange={(e) => setSearchTerm(e.target.value)}
-                 />
-                 {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute right-3 top-3 text-slate-400"><XCircle size={18} /></button>}
-             </div>
-             
-             {!isGlobalEditMode && (
-                 <div className="flex gap-2">
-                     <button onClick={() => handleSort('name')} className="px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1 border bg-white border-slate-200 text-slate-600 hover:bg-slate-50">
-                        <ArrowUpDown size={14} /> Nome
-                     </button>
-                     <button onClick={() => handleSort('payoutDate')} className="px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-1 border bg-white border-slate-200 text-slate-600 hover:bg-slate-50">
-                        <Calendar size={14} /> Data
-                     </button>
+          <div className="bg-slate-100 p-4 -mx-4 md:mx-0 md:rounded-2xl border-y md:border border-slate-200 shadow-inner mb-4 transition-all">
+             <div className="flex flex-col md:flex-row gap-4 items-center">
+                 <div className="flex-1 relative w-full">
+                     <Search className="absolute left-4 top-3.5 text-slate-400 pointer-events-none" size={20} />
+                     <input 
+                       type="text" 
+                       placeholder={t('detail.search_placeholder')} 
+                       className="w-full pl-12 pr-10 py-3 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm font-bold text-slate-700 shadow-sm transition-all placeholder:font-normal placeholder:text-slate-400"
+                       value={searchTerm}
+                       onChange={(e) => setSearchTerm(e.target.value)}
+                     />
+                     {searchTerm && (
+                        <button 
+                            onClick={() => setSearchTerm('')} 
+                            className="absolute right-3 top-3 p-1 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"
+                        >
+                            <XCircle size={16} />
+                        </button>
+                     )}
                  </div>
-             )}
+                 
+                 {!isGlobalEditMode && (
+                     <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                         <button 
+                            onClick={() => handleSort('name')} 
+                            className={`px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm border ${sortConfig.key === 'name' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                         >
+                            <ArrowUpDown size={16} className={sortConfig.key === 'name' ? 'text-emerald-400' : 'text-slate-400'} /> 
+                            {t('detail.sort_name')}
+                         </button>
+                         <button 
+                            onClick={() => handleSort('payoutDate')} 
+                            className={`px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm border ${sortConfig.key === 'payoutDate' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+                         >
+                            <Calendar size={16} className={sortConfig.key === 'payoutDate' ? 'text-emerald-400' : 'text-slate-400'} /> 
+                            {t('detail.sort_date')}
+                         </button>
+                         <button 
+                            onClick={() => handleSort('received')} 
+                            className={`px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm border ${sortConfig.key === 'received' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+                         >
+                            <CheckSquare size={16} className={sortConfig.key === 'received' ? 'text-emerald-400' : 'text-slate-400'} /> 
+                            {t('detail.sort_status')}
+                         </button>
+                     </div>
+                 )}
+             </div>
           </div>
           
           {/* Add Member Button (Only in Edit Mode) */}
@@ -737,8 +762,8 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                     {p.order}
                   </div>
 
-                  {/* Avatar */}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0 ${getAvatarColor(p.name)}`}>
+                  {/* Avatar - Unique Icon per User */}
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0 overflow-hidden ring-2 ring-white ${getAvatarColor(p.name)}`}>
                       {p.name.charAt(0).toUpperCase()}
                   </div>
 
@@ -747,34 +772,41 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                     {isEditing ? (
                         // INLINE EDIT FORM
                         <div className="flex flex-col md:flex-row gap-2 md:items-center w-full">
-                             <input 
-                               type="text" 
-                               value={editForm.name} 
-                               onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                               className="font-bold text-slate-900 border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none w-full md:w-auto"
-                               placeholder="Nome"
-                               autoFocus
-                             />
+                             <div className="flex-1">
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Nome</label>
+                                <input 
+                                    type="text" 
+                                    value={editForm.name} 
+                                    onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                                    className="font-bold text-slate-900 border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none w-full"
+                                    placeholder="Nome"
+                                    autoFocus
+                                />
+                             </div>
                              <div className="flex gap-2">
-                                <div className="relative w-28">
-                                    <span className="absolute left-2 top-2.5 text-xs font-bold text-slate-400">MT</span>
+                                <div className="relative w-32">
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Contribuição (MT)</label>
+                                    <span className="absolute left-2 bottom-2.5 text-xs font-bold text-slate-400">MT</span>
                                     <input 
                                         type="number"
                                         value={editForm.amount}
                                         onChange={(e) => setEditForm({...editForm, amount: Number(e.target.value)})}
-                                        className="w-full pl-8 p-2 border border-slate-300 rounded-lg font-bold text-sm"
+                                        className="w-full pl-8 p-2 border border-slate-300 rounded-lg font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
                                     />
                                 </div>
-                                <input 
-                                    type="date" 
-                                    value={editForm.date} 
-                                    onChange={(e) => setEditForm({...editForm, date: e.target.value})}
-                                    className="p-2 border border-slate-300 rounded-lg text-sm"
-                                />
+                                <div className="w-32">
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Data Pagamento</label>
+                                    <input 
+                                        type="date" 
+                                        value={editForm.date} 
+                                        onChange={(e) => setEditForm({...editForm, date: e.target.value})}
+                                        className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                                    />
+                                </div>
                              </div>
-                             <div className="flex gap-1">
-                                <button onClick={saveParticipantChanges} className="bg-emerald-500 text-white p-2 rounded-lg"><Check size={16}/></button>
-                                <button onClick={() => setEditForm(null)} className="bg-slate-200 text-slate-600 p-2 rounded-lg"><X size={16}/></button>
+                             <div className="flex gap-1 items-end pb-0.5">
+                                <button onClick={saveParticipantChanges} className="bg-emerald-500 text-white p-2 rounded-lg hover:bg-emerald-600"><Check size={16}/></button>
+                                <button onClick={() => setEditForm(null)} className="bg-slate-200 text-slate-600 p-2 rounded-lg hover:bg-slate-300"><X size={16}/></button>
                              </div>
                         </div>
                     ) : (
@@ -786,7 +818,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                                 </h3>
                                 {p.received && <CheckCircle2 size={16} className="text-emerald-500" />}
                                 {isVariableAmount && (
-                                    <div title="Contribuição Variável" className="bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 border border-indigo-200">
+                                    <div className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 border border-indigo-200 shadow-sm">
                                         <Coins size={10} /> {formatCurrency(p.customContribution!)}
                                     </div>
                                 )}

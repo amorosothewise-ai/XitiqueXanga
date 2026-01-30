@@ -222,6 +222,10 @@ export const translations = {
     "detail.export": "Exportar CSV",
     "detail.export_pdf": "Exportar PDF",
     "detail.export_success": "Relatório baixado.",
+    "detail.search_placeholder": "Buscar por nome, data...",
+    "detail.sort_name": "Nome",
+    "detail.sort_date": "Data",
+    "detail.sort_status": "Status",
     
     // New Recalculation features
     "detail.recalc_title": "Recalcular Valores",
@@ -526,6 +530,10 @@ export const translations = {
     "detail.export": "Export CSV",
     "detail.export_pdf": "Export PDF",
     "detail.export_success": "Report downloaded.",
+    "detail.search_placeholder": "Buscar por nome, data...",
+    "detail.sort_name": "Nome",
+    "detail.sort_date": "Data",
+    "detail.sort_status": "Status",
     
     // New Recalculation features
     "detail.recalc_title": "Recalculate Values",
@@ -540,7 +548,7 @@ export const translations = {
     "detail.update_val": "Update",
 
     // End of Cycle
-    "end.title": "Cycle Completed",
+    "end.title": "Ciclo Completed",
     "end.subtitle": "Congratulations! Everyone has received their payout.",
     "end.question": "Do you want to renew this Xitique cycle? You can add, remove, or replace participants and adjust contribution values.",
     "end.btn_renew": "Renew Cycle",
