@@ -16,8 +16,12 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [language, setLanguage] = useState<Language>('pt');
 
   const t = (key: string, fallback?: string): string => {
-    // We cast key to TranslationKeys to ensure type safety while accessing the object
-    const dict = translations[language] as Record<string, string>;
+    // Safety check: Fallback to 'pt' if the selected language dictionary doesn't exist
+    const dict = (translations[language] || translations['pt']) as Record<string, string>;
+    
+    // If dict is still somehow undefined (shouldn't happen if pt exists), return key
+    if (!dict) return fallback || key;
+
     return dict[key] || fallback || key;
   };
 

@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase';
-import { Xitique, XitiqueStatus, XitiqueType, UserProfile, Participant, Transaction } from '../types';
+import { Xitique, XitiqueStatus, XitiqueType, Participant, Transaction } from '../types';
 
 // --- Offline Cache Keys ---
 const CACHE_XITIQUES_KEY = 'xitique_data_cache_v1';
@@ -183,39 +183,4 @@ export const createNewXitique = (partial: Partial<Xitique>): Xitique => {
     createdAt: Date.now(),
     transactions: [], 
   };
-};
-
-// --- User Profile Data (Legacy Local / Auth Sync) ---
-
-const USER_KEY = 'xitique_user_profile_v1';
-
-export const getUserProfile = (): UserProfile => {
-  const data = localStorage.getItem(USER_KEY);
-  if (data) {
-    const parsed = JSON.parse(data);
-    if (!parsed.notificationPreferences) {
-      parsed.notificationPreferences = {
-        contributions: true,
-        payouts: true,
-        updates: false
-      };
-    }
-    return parsed;
-  }
-  return {
-    id: 'guest',
-    name: 'Usuário',
-    email: '',
-    language: 'pt',
-    lastLogin: new Date().toISOString(),
-    notificationPreferences: {
-      contributions: true,
-      payouts: true,
-      updates: false
-    }
-  };
-};
-
-export const saveUserProfile = (profile: UserProfile): void => {
-  localStorage.setItem(USER_KEY, JSON.stringify(profile));
 };

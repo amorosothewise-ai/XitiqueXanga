@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { UserProfile } from '../types';
 import { login as apiLogin, loginWithGoogle as apiLoginGoogle, register as apiRegister, logout as apiLogout } from '../services/authService';
 import { supabase, isSupabaseConfigured } from '../services/supabase';
-import { getUserProfile, saveUserProfile } from '../services/storage';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -36,8 +35,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
     
-    // Sync with local storage for app continuity
-    saveUserProfile(profile);
     setUser(profile);
     setLoading(false);
   };

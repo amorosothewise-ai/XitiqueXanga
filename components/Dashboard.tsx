@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
-import { Xitique, Frequency, XitiqueStatus, XitiqueType } from '../types';
-import { getXitiques, getUserProfile } from '../services/storage';
+import { Xitique, Frequency, XitiqueStatus } from '../types';
+import { getXitiques } from '../services/storage';
 import { formatCurrency } from '../services/formatUtils';
 import { PlusCircle, ChevronRight, Wallet, Users, Loader2, Archive, Activity, ChevronLeft } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import FinancialTip from './FinancialTip';
 
 interface DashboardProps {
@@ -16,8 +16,10 @@ const ITEMS_PER_PAGE = 6;
 
 const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
   const [xitiques, setXitiques] = useState<Xitique[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(getUserProfile());
+  const [loadingData, setLoadingData] = useState(true);
+  
+  // Refactor: Use user from AuthContext instead of localStorage
+  const { user } = useAuth();
   const { t } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
@@ -25,11 +27,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
 
   useEffect(() => {
     async function loadData() {
-      setLoading(true);
+      setLoadingData(true);
       const data = await getXitiques();
       setXitiques(data);
-      setUser(getUserProfile());
-      setLoading(false);
+      setLoadingData(false);
     }
     loadData();
   }, []);
@@ -73,7 +74,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
       if (currentPage > 1) setCurrentPage(p => p - 1);
   };
 
-  if (loading) {
+  if (loadingData) {
     return (
         <div className="flex flex-col items-center justify-center min-h-[400px]">
             <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
@@ -91,7 +92,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
             <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">
-                        {t('dash.greeting', `Olá, ${user.name.split(' ')[0]}`).replace('{name}', user.name.split(' ')[0])}
+                        {user ? t('dash.greeting', `Olá, ${user.name.split(' ')[0]}`).replace('{name}', user.name.split(' ')[0]) : 'Olá!'}
                     </h1>
                     <p className="text-slate-500 max-w-lg leading-relaxed">
                         {t('dash.subtitle_welcome', 'Here is an overview of your financial circles and savings progress.')}
