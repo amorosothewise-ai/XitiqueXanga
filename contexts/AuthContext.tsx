@@ -1,8 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserProfile } from '../types';
 import { login as apiLogin, loginWithGoogle as apiLoginGoogle, register as apiRegister, logout as apiLogout } from '../services/authService';
-import { supabase } from '../services/supabase';
+import { supabase, isSupabaseConfigured } from '../services/supabase';
 import { getUserProfile, saveUserProfile } from '../services/storage';
 
 interface AuthContextType {
@@ -45,19 +44,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Initialize Supabase Auth Listener
   useEffect(() => {
-    // 1. Check active session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        if (!session.user.email_confirmed_at) {
-            await supabase.auth.signOut();
-            setLoading(false);
+    if (!isSupabaseConfigured) {
+      console.log('Supabase not configured. Skipping auth check.');
+      setLoading(false);
+      return;
+    }
+
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        if (session?.user) {
+          if (!session.user.email_confirmed_at) {
+              await supabase.auth.signOut();
+              setLoading(false);
+          } else {
+              mapAndSetUser(session.user);
+          }
         } else {
-            mapAndSetUser(session.user);
+          setLoading(false);
         }
-      } else {
+      } catch (err) {
+        console.error("Auth session check failed:", err);
         setLoading(false);
       }
-    });
+    };
+
+    checkSession();
 
     // 2. Listen for changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {

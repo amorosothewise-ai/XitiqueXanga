@@ -4,20 +4,27 @@ import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // Carrega variáveis de ambiente baseadas no modo (development/production)
+  // Load env file based on `mode` in the current working directory.
+  // We allow '' to load all envs, but specific usage is controlled below.
   const env = loadEnv(mode, path.resolve(), '');
 
   return {
     plugins: [react()],
     resolve: {
       alias: {
-        // Fix: __dirname is not available in ESM/TS without specific config, use path.resolve('./') to resolve from project root
         '@': path.resolve('./'),
       },
     },
     define: {
-      // Expõe seguramente a API_KEY e outras variáveis necessárias
-      'process.env.API_KEY': JSON.stringify(env.API_KEY),
+      // Expose the API Key safely. Prioritizes VITE_GEMINI_API_KEY, falls back to API_KEY.
+      // This allows 'process.env.API_KEY' to work in the Gemini SDK code.
+      // Ensure we provide a string default to prevent JSON.stringify(undefined)
+      'process.env.API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || env.API_KEY || ''),
+      
+      // Expose Supabase variables safely via process.env to avoid import.meta TS errors
+      // Default to empty string to ensure replacement works, fallback handled in code
+      'process.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL || ''),
+      'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY || ''),
     },
   };
 });

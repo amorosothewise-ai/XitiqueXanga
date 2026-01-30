@@ -1,5 +1,4 @@
-
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 import { UserProfile, AuthSession } from '../types';
 
 // Helper to map Supabase User to our App User Profile
@@ -21,6 +20,8 @@ const mapUser = (u: any): UserProfile => {
 };
 
 export const login = async (email: string, password: string): Promise<AuthSession> => {
+  if (!isSupabaseConfigured) throw new Error('Backend not configured. Please check .env file.');
+
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password
@@ -42,6 +43,8 @@ export const login = async (email: string, password: string): Promise<AuthSessio
 };
 
 export const loginWithGoogle = async (): Promise<void> => {
+  if (!isSupabaseConfigured) throw new Error('Backend not configured. Please check .env file.');
+
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -53,6 +56,8 @@ export const loginWithGoogle = async (): Promise<void> => {
 };
 
 export const register = async (name: string, email: string, password: string): Promise<AuthSession> => {
+  if (!isSupabaseConfigured) throw new Error('Backend not configured. Please check .env file.');
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -82,6 +87,8 @@ export const register = async (name: string, email: string, password: string): P
 };
 
 export const resendVerification = async (email: string): Promise<void> => {
+  if (!isSupabaseConfigured) throw new Error('Backend not configured.');
+  
   const { error } = await supabase.auth.resend({
     type: 'signup',
     email,
@@ -93,23 +100,31 @@ export const resendVerification = async (email: string): Promise<void> => {
 };
 
 export const logout = async (): Promise<void> => {
+  if (!isSupabaseConfigured) return;
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 };
 
 // Internal helper for Context to get current session
 export const getSession = async () => {
-  const { data } = await supabase.auth.getSession();
-  if (data.session?.user) {
-    // Enforce verification check on session retrieval
-    if (!data.session.user.email_confirmed_at) {
-        await supabase.auth.signOut();
-        return null;
+  if (!isSupabaseConfigured) return null;
+
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.user) {
+      // Enforce verification check on session retrieval
+      if (!data.session.user.email_confirmed_at) {
+          await supabase.auth.signOut();
+          return null;
+      }
+      return {
+         user: mapUser(data.session.user),
+         token: data.session.access_token
+      };
     }
-    return {
-       user: mapUser(data.session.user),
-       token: data.session.access_token
-    };
+    return null;
+  } catch (err) {
+    console.warn("Failed to retrieve session:", err);
+    return null;
   }
-  return null;
 };

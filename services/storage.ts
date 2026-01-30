@@ -1,5 +1,4 @@
-
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 import { Xitique, XitiqueStatus, XitiqueType, UserProfile, Participant, Transaction } from '../types';
 
 // --- Offline Cache Keys ---
@@ -8,9 +7,9 @@ const CACHE_XITIQUES_KEY = 'xitique_data_cache_v1';
 // --- Xitique Data (Database) ---
 
 export const getXitiques = async (): Promise<Xitique[]> => {
-  // Offline Strategy: If offline, return cache immediately
-  if (!navigator.onLine) {
-    console.log("Offline mode: Loading Xitiques from local cache.");
+  // Offline Strategy: If offline OR not configured, return cache immediately
+  if (!navigator.onLine || !isSupabaseConfigured) {
+    console.log("Offline/Demo mode: Loading Xitiques from local cache.");
     const cached = localStorage.getItem(CACHE_XITIQUES_KEY);
     return cached ? JSON.parse(cached) : [];
   }
@@ -74,6 +73,21 @@ export const getXitiques = async (): Promise<Xitique[]> => {
 };
 
 export const saveXitique = async (xitique: Xitique): Promise<void> => {
+  if (!isSupabaseConfigured) {
+      // In demo/offline mode, just update the cache to simulate persistence
+      const currentCache = localStorage.getItem(CACHE_XITIQUES_KEY);
+      let items: Xitique[] = currentCache ? JSON.parse(currentCache) : [];
+      
+      const index = items.findIndex(x => x.id === xitique.id);
+      if (index >= 0) {
+          items[index] = xitique;
+      } else {
+          items.unshift(xitique);
+      }
+      localStorage.setItem(CACHE_XITIQUES_KEY, JSON.stringify(items));
+      return;
+  }
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("User not authenticated");
 
@@ -125,6 +139,8 @@ export const saveXitique = async (xitique: Xitique): Promise<void> => {
 };
 
 export const deleteParticipant = async (id: string): Promise<void> => {
+  if (!isSupabaseConfigured) return;
+
   const { error } = await supabase
     .from('participants')
     .delete()
@@ -134,6 +150,15 @@ export const deleteParticipant = async (id: string): Promise<void> => {
 };
 
 export const deleteXitique = async (id: string): Promise<void> => {
+   if (!isSupabaseConfigured) {
+      // In demo/offline mode, remove from cache
+      const currentCache = localStorage.getItem(CACHE_XITIQUES_KEY);
+      let items: Xitique[] = currentCache ? JSON.parse(currentCache) : [];
+      items = items.filter(x => x.id !== id);
+      localStorage.setItem(CACHE_XITIQUES_KEY, JSON.stringify(items));
+      return;
+   }
+
   const { error } = await supabase
     .from('xitiques')
     .update({ status: XitiqueStatus.ARCHIVED })
