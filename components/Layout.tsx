@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, PlusCircle, Calculator, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank, ArrowLeft, Hexagon, TrendingUp, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Calculator, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank, ArrowLeft, Hexagon, TrendingUp, Moon, Sun, Globe } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { checkAndGenerateNotifications, markNotificationRead } from '../services/notificationService';
@@ -21,20 +21,41 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
   // Theme State
   const [isDark, setIsDark] = useState(false);
 
-  // Initialize Theme
+  // Initialize Theme with System Preference Listener
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    // Check saved theme or system preference
-    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-        setIsDark(true);
-        document.documentElement.classList.add('dark');
-    } else {
-        setIsDark(false);
-        document.documentElement.classList.remove('dark');
-    }
-  }, []); // Run once on mount
+    const applyTheme = () => {
+        const savedTheme = localStorage.getItem('theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        // If saved is 'dark', OR no save but system is dark -> Dark Mode
+        if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
+            setIsDark(true);
+            document.documentElement.classList.add('dark');
+        } else {
+            setIsDark(false);
+            document.documentElement.classList.remove('dark');
+        }
+    };
+
+    applyTheme();
+
+    // Listener for system changes (only effective if user hasn't explicitly saved a preference)
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemChange = (e: MediaQueryListEvent) => {
+        if (!localStorage.getItem('theme')) {
+            if (e.matches) {
+                setIsDark(true);
+                document.documentElement.classList.add('dark');
+            } else {
+                setIsDark(false);
+                document.documentElement.classList.remove('dark');
+            }
+        }
+    };
+
+    mediaQuery.addEventListener('change', handleSystemChange);
+    return () => mediaQuery.removeEventListener('change', handleSystemChange);
+  }, []);
 
   // Initialize Notifications & Click Listeners
   useEffect(() => {
@@ -121,7 +142,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
              <button 
                 onClick={toggleTheme} 
                 className={`p-2 rounded-full transition-all duration-300 ${isDark ? 'text-yellow-400 hover:bg-white/10' : 'text-slate-400 hover:text-white hover:bg-white/10'}`}
-                title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                title={isDark ? "Modo Claro" : "Modo Escuro"}
              >
                 {isDark ? <Sun size={20} /> : <Moon size={20} />}
              </button>
@@ -222,7 +243,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
                  <button 
                     onClick={toggleTheme}
                     className="flex-1 bg-slate-800 hover:bg-slate-700 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-                    title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                    title={isDark ? "Modo Claro" : "Modo Escuro"}
                 >
                     {isDark ? <Sun size={16} className="text-yellow-400" /> : <Moon size={16} />}
                 </button>
