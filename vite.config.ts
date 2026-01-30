@@ -22,5 +22,35 @@ export default defineConfig(({ mode }) => {
       'process.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL || ''),
       'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY || ''),
     },
+    build: {
+      // Increases the warning limit to 1500kb (default is 500kb)
+      chunkSizeWarningLimit: 1500,
+      rollupOptions: {
+        output: {
+          // Manually separate vendor libraries into their own chunks for better caching and performance
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('react') || id.includes('react-dom')) {
+                return 'vendor-react';
+              }
+              if (id.includes('@supabase')) {
+                return 'vendor-supabase';
+              }
+              if (id.includes('recharts')) {
+                return 'vendor-recharts';
+              }
+              if (id.includes('lucide')) {
+                return 'vendor-icons';
+              }
+              if (id.includes('jspdf')) {
+                return 'vendor-pdf';
+              }
+              // All other node_modules go into a generic vendor chunk
+              return 'vendor'; 
+            }
+          },
+        },
+      },
+    },
   };
 });
