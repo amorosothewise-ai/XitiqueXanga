@@ -22,6 +22,7 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [selectedXitique, setSelectedXitique] = useState<Xitique | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   
   // State to hold data for renewal wizard
   const [renewalData, setRenewalData] = useState<Xitique | null>(null);
@@ -61,13 +62,16 @@ const App: React.FC = () => {
     setCurrentView('detail');
   };
 
-  const handleDeleteXitique = () => {
+  const handleDeleteXitique = async () => {
     if (selectedXitique) {
-        deleteXitique(selectedXitique.id);
-        setSelectedXitique(null);
-        setCurrentView('dashboard');
-        // Force refresh by key change or relying on dashboard internal effect
-        window.location.reload(); 
+        try {
+            await deleteXitique(selectedXitique.id);
+            setSelectedXitique(null);
+            setCurrentView('dashboard');
+            setRefreshKey(prev => prev + 1);
+        } catch (error) {
+            console.error("Error deleting xitique:", error);
+        }
     }
   };
 
@@ -82,6 +86,7 @@ const App: React.FC = () => {
       case 'dashboard':
         return (
           <Dashboard 
+            key={refreshKey}
             onCreate={() => {
                 setRenewalData(null); // Ensure fresh wizard
                 setCurrentView('create');

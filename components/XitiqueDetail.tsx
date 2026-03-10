@@ -6,7 +6,7 @@ import { formatCurrency } from '../services/formatUtils';
 import { analyzeFairness } from '../services/geminiService';
 import { saveXitique, deleteParticipant } from '../services/storage';
 import { createTransaction, calculateCyclePot, calculateDynamicPot } from '../services/financeLogic';
-import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save, Download, ThumbsUp, Hash, XCircle, FileText, Activity, PenTool, PlayCircle, Lock, Unlock, Shuffle, Coins, Settings, RotateCcw, ArrowDownRight } from 'lucide-react';
+import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save, Download, ThumbsUp, Hash, XCircle, FileText, Activity, PenTool, PlayCircle, Lock, Unlock, Shuffle, Coins, Settings, RotateCcw, ArrowDownRight, LogIn } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import FinancialTip from './FinancialTip';
@@ -23,9 +23,10 @@ interface Props {
 
 type SortKey = 'order' | 'name' | 'payoutDate' | 'received';
 
-const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) => {
+const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDelete, onRenew }) => {
   const { t } = useLanguage();
   const { addToast } = useToast();
+  const [xitique, setXitique] = useState<Xitique>(initialXitique);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
   const [activeTab, setActiveTab] = useState<'schedule' | 'analysis' | 'history'>('schedule');
@@ -34,9 +35,9 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
   const [isGlobalEditMode, setIsGlobalEditMode] = useState(false);
   
   // Temporary States for Global Edit
-  const [tempName, setTempName] = useState(xitique.name);
-  const [tempAmount, setTempAmount] = useState(xitique.amount);
-  const [tempStartDate, setTempStartDate] = useState(xitique.startDate ? new Date(xitique.startDate).toISOString().split('T')[0] : '');
+  const [tempName, setTempName] = useState(initialXitique.name);
+  const [tempAmount, setTempAmount] = useState(initialXitique.amount);
+  const [tempStartDate, setTempStartDate] = useState(initialXitique.startDate ? new Date(initialXitique.startDate).toISOString().split('T')[0] : '');
 
   // Edit State (Individual Participant)
   const [editForm, setEditForm] = useState<{
@@ -54,7 +55,6 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
   // Drag & Drop & Shuffle State
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [lockedIds, setLockedIds] = useState<Set<string>>(new Set());
-  const [_, setForceUpdate] = useState(0); // To trigger re-renders on mutation
 
   // Derived State
   // Note: totalPotentialFlow now represents the sum of all dynamic payouts in the cycle
@@ -80,10 +80,11 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
   });
 
   useEffect(() => {
-    setTempName(xitique.name);
-    setTempAmount(xitique.amount);
-    setTempStartDate(xitique.startDate ? new Date(xitique.startDate).toISOString().split('T')[0] : '');
-  }, [xitique]);
+    setXitique(initialXitique);
+    setTempName(initialXitique.name);
+    setTempAmount(initialXitique.amount);
+    setTempStartDate(initialXitique.startDate ? new Date(initialXitique.startDate).toISOString().split('T')[0] : '');
+  }, [initialXitique]);
 
   // --- Helper Functions ---
 
@@ -197,15 +198,14 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
           payoutDate: addPeriod(xitique.startDate, xitique.frequency, index)
       }));
 
-      // Optimistic update
-      xitique.participants = updatedParticipants;
-      
       const updatedXitique = { ...xitique, participants: updatedParticipants };
       await saveXitique(updatedXitique);
       
+      // Update local state
+      setXitique(updatedXitique);
+      
       addToast('Ordem atualizada e datas recalculadas', 'success');
       setDraggedId(null);
-      setForceUpdate(prev => prev + 1);
   };
 
   // --- Optimized Edit Mode Logic ---
@@ -258,15 +258,10 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
     await saveXitique(updatedXitique);
     
     // Apply to local state
-    xitique.name = tempName;
-    xitique.amount = tempAmount;
-    xitique.startDate = new Date(newDate).toISOString();
-    xitique.participants = updatedParticipants;
-    xitique.status = newStatus;
+    setXitique(updatedXitique);
 
     setIsGlobalEditMode(false);
     addToast('Alterações salvas com sucesso!', 'success');
-    setForceUpdate(prev => prev + 1);
   };
 
   const handleAddMember = async () => {
@@ -290,11 +285,10 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
       const updatedXitique = { ...xitique, participants: updatedParticipants };
       
       await saveXitique(updatedXitique);
-      xitique.participants = updatedParticipants;
+      setXitique(updatedXitique);
       
       startEditingParticipant(newMember); // Auto-open edit for name
       addToast('Membro adicionado ao final da fila', 'success');
-      setForceUpdate(prev => prev + 1);
   };
 
   // --- Deletion & Toggle Logic ---
@@ -329,9 +323,8 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
       };
       
       await saveXitique(updatedXitique);
-      xitique.participants = remainingParticipants;
+      setXitique(updatedXitique);
       
-      setForceUpdate(prev => prev + 1);
       addToast(t('common.success'), 'success');
   };
 
@@ -363,10 +356,9 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
 
       const updatedXitique = { ...xitique, participants: updatedParticipants };
       await saveXitique(updatedXitique);
-      xitique.participants = updatedParticipants;
+      setXitique(updatedXitique);
       setEditForm(null);
       addToast('Participante atualizado', 'success');
-      setForceUpdate(prev => prev + 1);
   };
 
   const handleToggleClick = (participantId: string) => {
@@ -431,25 +423,23 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
     };
     
     await saveXitique(updatedXitique);
-    xitique.participants = updatedParticipants; 
-    xitique.transactions = updatedTx;
-    xitique.status = updatedXitique.status;
+    setXitique(updatedXitique);
     
     addToast(willReceive ? 'Pago' : 'Revertido', 'success');
-    setForceUpdate(prev => prev + 1);
   };
 
   // --- Exports & Utils ---
   
   const handleShare = async () => {
     const header = `💰 *${xitique.name}*`;
+    const invite = xitique.inviteCode ? `\n🔑 *Invite Code:* ${xitique.inviteCode}` : '';
     const list = xitique.participants.map((p, i) => {
         const date = p.payoutDate ? formatDate(p.payoutDate) : 'Data indef.';
         const status = p.received ? '✅ Pago' : '⏳ Pendente';
         const amount = calculateDynamicPot(xitique, p);
         return `${i + 1}. ${p.name} - ${date} (${formatCurrency(amount)}) ${status}`;
     }).join('\n');
-    const fullText = `${header}\n\n📅 *Cronograma:*\n${list}`;
+    const fullText = `${header}${invite}\n\n📅 *Cronograma:*\n${list}`;
 
     if (navigator.share) {
         await navigator.share({ title: xitique.name, text: fullText });
@@ -618,6 +608,19 @@ const XitiqueDetail: React.FC<Props> = ({ xitique, onBack, onDelete, onRenew }) 
                         )}
                     </div>
                 </div>
+
+                {/* Invite Code */}
+                {xitique.inviteCode && (
+                    <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10">
+                        <div className="bg-blue-400/20 p-2 rounded-lg">
+                            <LogIn size={20} className="text-blue-400" />
+                        </div>
+                        <div>
+                            <div className="text-xs text-slate-300 uppercase font-semibold">Invite Code</div>
+                            <div className="text-xl font-bold font-mono tracking-wider">{xitique.inviteCode}</div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Member Count */}
                 <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10">

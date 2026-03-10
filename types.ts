@@ -93,6 +93,7 @@ export interface Transaction {
 export interface Participant {
   id: string;
   name: string;
+  userId?: string; // Link to a registered user
   payoutDate?: string; // ISO Date string
   received: boolean;
   order: number;
@@ -102,6 +103,7 @@ export interface Participant {
 export interface Xitique {
   id: string;
   name: string;
+  inviteCode?: string; // Code for others to join
   type: XitiqueType;
   amount: number; // The "Base" amount
   targetAmount?: number;

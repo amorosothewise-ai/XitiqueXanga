@@ -78,17 +78,54 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
     }
   }, [contributionMode, amount]);
 
-  // When entering Step 3, init the ordered list if empty
+  // When entering Step 3, sync the ordered list with participantsData
   useEffect(() => {
-    if (step === 3 && orderedParticipants.length === 0) {
-        // Convert any strings to numbers for the ordered list
+    if (step === 3) {
         const cleanData = participantsData
             .filter(p => p.name.trim() !== '')
             .map(p => ({
                 name: p.name,
                 amount: Number(p.amount) || 0
             }));
-        setOrderedParticipants(cleanData);
+
+        // If the number of participants changed, or if it's the first time, reset the order
+        // Otherwise, try to preserve the existing order but add/remove as necessary
+        if (orderedParticipants.length === 0) {
+            setOrderedParticipants(cleanData);
+        } else {
+            // Check if names match. If not, we might need to sync.
+            // Simple heuristic: if count is different, we definitely need to sync.
+            if (cleanData.length !== orderedParticipants.length) {
+                // To preserve order as much as possible:
+                const newOrder: { name: string; amount: number }[] = [];
+                const existingNames = new Set(orderedParticipants.map(p => p.name));
+                
+                // Keep existing ones in their order
+                orderedParticipants.forEach(p => {
+                    if (cleanData.some(cd => cd.name === p.name)) {
+                        // Update amount in case it changed in step 2
+                        const updated = cleanData.find(cd => cd.name === p.name);
+                        newOrder.push({ ...p, amount: updated?.amount || p.amount });
+                    }
+                });
+                
+                // Add new ones at the end
+                cleanData.forEach(cd => {
+                    if (!existingNames.has(cd.name)) {
+                        newOrder.push(cd);
+                    }
+                });
+                
+                setOrderedParticipants(newOrder);
+            } else {
+                // Same length, but maybe amounts changed?
+                const updatedOrder = orderedParticipants.map(p => {
+                    const match = cleanData.find(cd => cd.name === p.name);
+                    return match ? { ...p, amount: match.amount } : p;
+                });
+                setOrderedParticipants(updatedOrder);
+            }
+        }
     }
   }, [step, participantsData]);
 

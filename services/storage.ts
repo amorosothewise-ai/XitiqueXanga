@@ -17,16 +17,31 @@ export const getXitiques = async (): Promise<Xitique[]> => {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) return [];
 
-  // Fetch Xitiques with their related data
-  // Removed .neq('status', 'ARCHIVED') to allow the history tab to show archived items.
-  const { data, error } = await supabase
+  // Fetch Xitiques where user is owner OR participant
+  // First, get IDs of xitiques where user is a participant
+  const { data: participantLinks } = await supabase
+    .from('participants')
+    .select('xitique_id')
+    .eq('userId', user.user.id);
+  
+  const participantXitiqueIds = (participantLinks || []).map(p => p.xitique_id);
+
+  // Fetch Xitiques
+  let query = supabase
     .from('xitiques')
     .select(`
       *,
       participants (*),
       transactions (*)
-    `)
-    .order('created_at', { ascending: false });
+    `);
+  
+  if (participantXitiqueIds.length > 0) {
+    query = query.or(`user_id.eq.${user.user.id},id.in.(${participantXitiqueIds.join(',')})`);
+  } else {
+    query = query.eq('user_id', user.user.id);
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false });
 
   if (error) {
     console.error("Error fetching xitiques:", error);
@@ -39,6 +54,7 @@ export const getXitiques = async (): Promise<Xitique[]> => {
   const mappedData = data.map((x: any) => ({
     id: x.id,
     name: x.name,
+    inviteCode: x.invite_code,
     type: x.type as XitiqueType,
     amount: Number(x.amount),
     targetAmount: x.target_amount ? Number(x.target_amount) : undefined,
@@ -51,6 +67,7 @@ export const getXitiques = async (): Promise<Xitique[]> => {
     participants: (x.participants || []).map((p: any) => ({
       id: p.id,
       name: p.name,
+      userId: p.userId,
       received: p.received,
       order: p.order,
       payoutDate: p.payout_date,
@@ -96,6 +113,7 @@ export const saveXitique = async (xitique: Xitique): Promise<void> => {
     id: xitique.id,
     user_id: user.id,
     name: xitique.name,
+    invite_code: xitique.inviteCode,
     type: xitique.type,
     amount: xitique.amount,
     target_amount: xitique.targetAmount,
@@ -113,6 +131,7 @@ export const saveXitique = async (xitique: Xitique): Promise<void> => {
       id: p.id,
       xitique_id: xitique.id,
       name: p.name,
+      userId: p.userId,
       payout_date: p.payoutDate,
       received: p.received,
       order: p.order,
@@ -139,7 +158,20 @@ export const saveXitique = async (xitique: Xitique): Promise<void> => {
 };
 
 export const deleteParticipant = async (id: string): Promise<void> => {
-  if (!isSupabaseConfigured) return;
+  if (!isSupabaseConfigured) {
+    // In demo/offline mode, remove from cache
+    const currentCache = localStorage.getItem(CACHE_XITIQUES_KEY);
+    if (!currentCache) return;
+    
+    let items: Xitique[] = JSON.parse(currentCache);
+    items = items.map(xitique => ({
+      ...xitique,
+      participants: xitique.participants.filter(p => p.id !== id)
+    }));
+    
+    localStorage.setItem(CACHE_XITIQUES_KEY, JSON.stringify(items));
+    return;
+  }
 
   const { error } = await supabase
     .from('participants')
@@ -167,10 +199,80 @@ export const deleteXitique = async (id: string): Promise<void> => {
   if (error) throw error;
 };
 
+export const joinXitique = async (inviteCode: string): Promise<void> => {
+  if (!isSupabaseConfigured) throw new Error("Supabase not configured");
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("User not authenticated");
+
+  // 1. Find Xitique by invite code
+  const { data: xitique, error: xError } = await supabase
+    .from('xitiques')
+    .select('id, name')
+    .eq('invite_code', inviteCode)
+    .single();
+
+  if (xError || !xitique) throw new Error("Circle not found with this code");
+
+  // 2. Check if user is already a participant
+  const { data: existing, error: eError } = await supabase
+    .from('participants')
+    .select('id')
+    .eq('xitique_id', xitique.id)
+    .eq('userId', user.id)
+    .single();
+
+  if (existing) throw new Error("You are already in this circle");
+
+  // 3. Find an empty slot (participant with no userId) or add a new one
+  // For simplicity, we'll try to find a participant with the same name as the user or just an empty slot
+  const { data: emptySlot } = await supabase
+    .from('participants')
+    .select('*')
+    .eq('xitique_id', xitique.id)
+    .is('userId', null)
+    .order('order', { ascending: true })
+    .limit(1)
+    .single();
+
+  if (emptySlot) {
+    // Claim the slot
+    const { error: uError } = await supabase
+      .from('participants')
+      .update({ userId: user.id, name: user.user_metadata.name || user.email })
+      .eq('id', emptySlot.id);
+    if (uError) throw uError;
+  } else {
+    // Add new participant at the end
+    const { data: lastParticipant } = await supabase
+      .from('participants')
+      .select('order')
+      .eq('xitique_id', xitique.id)
+      .order('order', { ascending: false })
+      .limit(1)
+      .single();
+    
+    const nextOrder = (lastParticipant?.order || 0) + 1;
+    
+    const { error: iError } = await supabase
+      .from('participants')
+      .insert({
+        id: crypto.randomUUID(),
+        xitique_id: xitique.id,
+        userId: user.id,
+        name: user.user_metadata.name || user.email,
+        order: nextOrder,
+        received: false
+      });
+    if (iError) throw iError;
+  }
+};
+
 export const createNewXitique = (partial: Partial<Xitique>): Xitique => {
   return {
     id: crypto.randomUUID(),
     name: partial.name || 'Meu Novo Xitique',
+    inviteCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
     type: partial.type || XitiqueType.GROUP,
     amount: partial.amount || 100,
     targetAmount: partial.targetAmount,

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Xitique, Frequency, XitiqueStatus } from '../types';
-import { getXitiques } from '../services/storage';
+import { getXitiques, joinXitique } from '../services/storage';
 import { formatCurrency } from '../services/formatUtils';
-import { PlusCircle, ChevronRight, Wallet, Users, Loader2, Archive, Activity, ChevronLeft } from 'lucide-react';
+import { PlusCircle, ChevronRight, Wallet, Users, Loader2, Archive, Activity, ChevronLeft, LogIn, X } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import FinancialTip from './FinancialTip';
 
 interface DashboardProps {
@@ -17,23 +18,46 @@ const ITEMS_PER_PAGE = 6;
 const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
   const [xitiques, setXitiques] = useState<Xitique[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
+  const [joining, setJoining] = useState(false);
   
   // Refactor: Use user from AuthContext instead of localStorage
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { addToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
   const [currentPage, setCurrentPage] = useState(1);
 
+  const loadData = async () => {
+    setLoadingData(true);
+    const data = await getXitiques();
+    setXitiques(data);
+    setLoadingData(false);
+  };
+
   useEffect(() => {
-    async function loadData() {
-      setLoadingData(true);
-      const data = await getXitiques();
-      setXitiques(data);
-      setLoadingData(false);
-    }
     loadData();
   }, []);
+
+  const handleJoin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteCode.trim()) return;
+
+    setJoining(true);
+    try {
+      await joinXitique(inviteCode.trim().toUpperCase());
+      addToast('Successfully joined the circle!', 'success');
+      setShowJoinModal(false);
+      setInviteCode('');
+      await loadData();
+    } catch (error: any) {
+      addToast(error.message || 'Failed to join circle', 'error');
+    } finally {
+      setJoining(false);
+    }
+  };
 
   useEffect(() => {
       // Reset page when tab changes
@@ -148,11 +172,60 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
             </div>
 
             {xitiques.length > 0 && activeTab === 'active' && (
-                <button onClick={onCreate} className="hidden md:block text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:underline">
-                    {t('dash.create_new', '+ New Circle')}
-                </button>
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => setShowJoinModal(true)}
+                        className="hidden md:flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 hover:underline"
+                    >
+                        <LogIn size={16} /> {t('dash.join_circle', 'Join Circle')}
+                    </button>
+                    <button onClick={onCreate} className="hidden md:block text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:underline">
+                        {t('dash.create_new', '+ New Circle')}
+                    </button>
+                </div>
             )}
         </div>
+
+        {/* Join Modal */}
+        {showJoinModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+                    <button 
+                        onClick={() => setShowJoinModal(false)}
+                        className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+                    >
+                        <X size={20} />
+                    </button>
+                    
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">Join a Circle</h3>
+                    <p className="text-slate-500 text-sm mb-6">Enter the 6-character invite code provided by the circle organizer.</p>
+                    
+                    <form onSubmit={handleJoin} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-2">Invite Code</label>
+                            <input 
+                                type="text" 
+                                value={inviteCode}
+                                onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                                placeholder="E.g. AB12CD"
+                                maxLength={6}
+                                className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-center font-mono text-2xl tracking-widest"
+                                autoFocus
+                            />
+                        </div>
+                        
+                        <button 
+                            type="submit"
+                            disabled={joining || !inviteCode.trim()}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-200 transition-all flex items-center justify-center disabled:opacity-50"
+                        >
+                            {joining ? <Loader2 className="animate-spin mr-2" /> : <LogIn className="mr-2" />}
+                            Join Circle
+                        </button>
+                    </form>
+                </div>
+            </div>
+        )}
 
         {filteredList.length === 0 ? (
             activeTab === 'active' ? (
@@ -162,11 +235,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
                     </div>
                     <h3 className="text-xl font-bold text-slate-800 mb-2">{t('dash.no_active')}</h3>
                     <p className="text-slate-500 mb-8 max-w-sm mx-auto">{t('dash.start_new')}</p>
-                    <button 
-                        className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-3 rounded-xl font-bold shadow-xl shadow-slate-200 transition-all inline-flex items-center transform group-hover:-translate-y-1"
-                    >
-                        <PlusCircle size={18} className="mr-2" /> {t('dash.btn_init')}
-                    </button>
+                    <div className="flex flex-col md:flex-row justify-center gap-4 px-6">
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onCreate(); }}
+                            className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-3 rounded-xl font-bold shadow-xl shadow-slate-200 transition-all inline-flex items-center justify-center transform group-hover:-translate-y-1"
+                        >
+                            <PlusCircle size={18} className="mr-2" /> {t('dash.btn_init')}
+                        </button>
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setShowJoinModal(true); }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold shadow-xl shadow-blue-200 transition-all inline-flex items-center justify-center transform group-hover:-translate-y-1"
+                        >
+                            <LogIn size={18} className="mr-2" /> {t('dash.btn_join', 'Join Existing')}
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <div className="text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
