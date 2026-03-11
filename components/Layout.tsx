@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, PlusCircle, Calculator, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank, ArrowLeft, Hexagon, TrendingUp, Moon, Sun, Globe } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank, ArrowLeft, Hexagon, TrendingUp, Moon, Sun, Globe, Sparkles } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { checkAndGenerateNotifications, markNotificationRead } from '../services/notificationService';
@@ -182,11 +182,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
                     icon={<PiggyBank size={20} />} 
                     label={t('nav.individual')} 
                 />
-                 <NavButton 
-                    active={activeView === 'simulation'} 
-                    onClick={() => onChangeView('simulation')} 
-                    icon={<Calculator size={20} />} 
-                    label={t('nav.simulation')} 
+                <NavButton 
+                    active={activeView === 'planner'} 
+                    onClick={() => onChangeView('planner')} 
+                    icon={<Sparkles size={20} />} 
+                    label={t('nav.planner')} 
                 />
               </div>
            </div>
@@ -279,7 +279,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
                     <PlusCircle size={28} />
                 </button>
             </div>
-            <MobileNavBtn active={activeView === 'simulation'} onClick={() => onChangeView('simulation')} icon={<Calculator size={24} />} />
+            <MobileNavBtn active={activeView === 'planner'} onClick={() => onChangeView('planner')} icon={<Sparkles size={24} />} />
             <MobileNavBtn active={activeView === 'user'} onClick={() => onChangeView('user')} icon={<Settings size={24} />} />
             </div>
         </div>

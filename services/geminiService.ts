@@ -60,3 +60,57 @@ export const analyzeFairness = async (xitique: Xitique): Promise<string> => {
     return "Unable to connect to the smart assistant. Please check your internet connection and API Key configuration.";
   }
 };
+
+export interface AdjustmentSuggestion {
+  participantId: string;
+  suggestedContribution: number;
+  reason: string;
+}
+
+export const suggestAdjustments = async (xitique: Xitique): Promise<AdjustmentSuggestion[]> => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) return [];
+
+  const ai = new GoogleGenAI({ apiKey });
+
+  const participantData = xitique.participants.map(p => ({
+    id: p.id,
+    name: p.name,
+    order: p.order,
+    currentContribution: p.customContribution || xitique.amount
+  }));
+
+  const prompt = `
+    Você é um especialista financeiro para o sistema Xitique (poupança rotativa).
+    Este grupo tem contribuições desiguais, o que pode causar injustiça para quem recebe por último.
+    
+    Dados do Grupo:
+    - Valor Base: ${xitique.amount}
+    - Participantes: ${JSON.stringify(participantData)}
+    
+    OBJETIVO: Sugerir ajustes nos valores de contribuição (customContribution) para que o sistema seja matematicamente equilibrado.
+    No Xitique Dinâmico, o pote que cada um recebe é a soma de Min(ContribuiçãoDoPagador, ContribuiçãoDoRecebedor).
+    
+    Retorne APENAS um array JSON de objetos com este formato:
+    [{"participantId": "string", "suggestedContribution": number, "reason": "string"}]
+    
+    Não inclua explicações fora do JSON.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    const text = response.text;
+    if (!text) return [];
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Gemini Suggestion Error:", error);
+    return [];
+  }
+};

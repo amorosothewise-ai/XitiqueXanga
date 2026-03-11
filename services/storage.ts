@@ -4,6 +4,28 @@ import { Xitique, XitiqueStatus, XitiqueType, Participant, Transaction } from '.
 // --- Offline Cache Keys ---
 const CACHE_XITIQUES_KEY = 'xitique_data_cache_v1';
 
+// --- User Preferences ---
+
+const PREFS_KEY = 'xitique_user_prefs';
+
+export interface UserPrefs {
+    onboardingCompleted: boolean;
+    theme?: 'light' | 'dark';
+    language?: 'pt' | 'en';
+}
+
+export const getUserPrefs = (): UserPrefs => {
+    const cached = localStorage.getItem(PREFS_KEY);
+    return cached ? JSON.parse(cached) : { onboardingCompleted: false };
+};
+
+export const saveUserPrefs = (prefs: Partial<UserPrefs>) => {
+    const current = getUserPrefs();
+    const updated = { ...current, ...prefs };
+    localStorage.setItem(PREFS_KEY, JSON.stringify(updated));
+    return updated;
+};
+
 // --- Xitique Data (Database) ---
 
 export const getXitiques = async (): Promise<Xitique[]> => {
@@ -33,7 +55,8 @@ export const getXitiques = async (): Promise<Xitique[]> => {
       *,
       participants (*),
       transactions (*)
-    `);
+    `)
+    .neq('status', 'ARCHIVED');
   
   if (participantXitiqueIds.length > 0) {
     query = query.or(`user_id.eq.${user.user.id},id.in.(${participantXitiqueIds.join(',')})`);

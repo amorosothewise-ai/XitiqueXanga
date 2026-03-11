@@ -4,24 +4,26 @@ import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Wizard from './components/Wizard';
 import XitiqueDetail from './components/XitiqueDetail';
-import Simulation from './components/Simulation';
 import ArchitectureInfo from './components/ArchitectureInfo';
 import UserProfile from './components/UserProfile';
 import IndividualDashboard from './components/IndividualDashboard';
+import AIGoalPlanner from './components/AIGoalPlanner';
 import AuthScreen from './components/AuthScreen';
 import Onboarding from './components/Onboarding';
+import AppTutorial from './components/AppTutorial';
 import { useAuth } from './contexts/AuthContext';
 import { Xitique } from './types';
-import { deleteXitique } from './services/storage';
+import { deleteXitique, getUserPrefs, saveUserPrefs } from './services/storage';
 import { Loader2 } from 'lucide-react';
 
-type View = 'dashboard' | 'create' | 'detail' | 'simulation' | 'info' | 'user' | 'individual';
+type View = 'dashboard' | 'create' | 'detail' | 'info' | 'user' | 'individual' | 'planner';
 
 const App: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [selectedXitique, setSelectedXitique] = useState<Xitique | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   
   // State to hold data for renewal wizard
@@ -29,16 +31,17 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-        const hasSeen = localStorage.getItem('xitique_onboarding_completed');
-        if (!hasSeen) {
+        const prefs = getUserPrefs();
+        if (!prefs.onboardingCompleted) {
             setShowOnboarding(true);
         }
     }
   }, [isAuthenticated]);
 
   const completeOnboarding = () => {
-      localStorage.setItem('xitique_onboarding_completed', 'true');
+      saveUserPrefs({ onboardingCompleted: true });
       setShowOnboarding(false);
+      setShowTutorial(true);
   };
 
   if (loading) {
@@ -92,6 +95,7 @@ const App: React.FC = () => {
                 setCurrentView('create');
             }}
             onSelect={handleSelectXitique}
+            onShowTutorial={() => setShowTutorial(true)}
           />
         );
       case 'create':
@@ -126,12 +130,13 @@ const App: React.FC = () => {
                 setCurrentView('create');
             }} 
             onSelect={handleSelectXitique} 
+            onShowTutorial={() => setShowTutorial(true)}
           />
         );
       case 'individual':
           return <IndividualDashboard />;
-      case 'simulation':
-        return <Simulation />;
+      case 'planner':
+          return <AIGoalPlanner />;
       case 'info':
         return <ArchitectureInfo />;
       case 'user':
@@ -144,15 +149,24 @@ const App: React.FC = () => {
                     setCurrentView('create');
                 }} 
                 onSelect={handleSelectXitique} 
+                onShowTutorial={() => setShowTutorial(true)}
             />
         );
     }
   };
 
   return (
-    <Layout activeView={currentView} onChangeView={(view) => setCurrentView(view as View)}>
-      {renderContent()}
-    </Layout>
+    <>
+      {showTutorial && (
+        <AppTutorial 
+          onComplete={() => setShowTutorial(false)} 
+          onClose={() => setShowTutorial(false)} 
+        />
+      )}
+      <Layout activeView={currentView} onChangeView={(view) => setCurrentView(view as View)}>
+        {renderContent()}
+      </Layout>
+    </>
   );
 };
 

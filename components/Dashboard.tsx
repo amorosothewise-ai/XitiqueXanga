@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Xitique, Frequency, XitiqueStatus } from '../types';
 import { getXitiques, joinXitique } from '../services/storage';
 import { formatCurrency } from '../services/formatUtils';
-import { PlusCircle, ChevronRight, Wallet, Users, Loader2, Archive, Activity, ChevronLeft, LogIn, X } from 'lucide-react';
+import { PlusCircle, ChevronRight, Wallet, Users, Loader2, Archive, Activity, ChevronLeft, LogIn, X, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -11,11 +12,12 @@ import FinancialTip from './FinancialTip';
 interface DashboardProps {
   onCreate: () => void;
   onSelect: (xitique: Xitique) => void;
+  onShowTutorial: () => void;
 }
 
 const ITEMS_PER_PAGE = 6;
 
-const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutorial }) => {
   const [xitiques, setXitiques] = useState<Xitique[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -143,10 +145,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
       {/* Main Content */}
       <div>
         <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-6 gap-4">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <Users size={20} className="text-emerald-500" />
-                {t('dash.your_groups', 'Your Circles')}
-            </h2>
+            <div className="flex items-center gap-4">
+                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <Users size={20} className="text-emerald-500" />
+                    {t('dash.your_groups', 'Your Circles')}
+                </h2>
+                <button 
+                    onClick={onShowTutorial}
+                    className="p-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 transition-colors"
+                    title={t('tut.title')}
+                >
+                    <Sparkles size={16} />
+                </button>
+            </div>
             
             <div className="flex bg-white rounded-xl border border-slate-200 p-1">
                 <button 
@@ -227,8 +238,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
             </div>
         )}
 
+        <AnimatePresence mode="wait">
         {filteredList.length === 0 ? (
-            activeTab === 'active' ? (
+            <motion.div
+                key={`${activeTab}-empty`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+            >
+            {activeTab === 'active' ? (
                 <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300 shadow-sm hover:border-emerald-300 transition-colors group cursor-pointer" onClick={onCreate}>
                     <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-500 group-hover:scale-110 transition-transform">
                         <Wallet size={32} />
@@ -255,9 +274,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
                     <Archive size={32} className="mx-auto mb-4 text-slate-300" />
                     <p className="text-slate-400 font-medium">{t('dash.no_archived')}</p>
                 </div>
-            )
+            )}
+            </motion.div>
         ) : (
-            <>
+            <motion.div
+                key={`${activeTab}-list`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+            >
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                 {paginatedList.map((x) => {
                     const progress = (x.participants.filter(p => p.received).length / x.participants.length) * 100;
@@ -371,8 +397,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect }) => {
                         </button>
                     </div>
                 )}
-            </>
+            </motion.div>
         )}
+        </AnimatePresence>
       </div>
     </div>
   );

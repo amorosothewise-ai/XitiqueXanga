@@ -3,14 +3,18 @@ import React, { useState, useEffect } from 'react';
 import { Xitique, Participant, TransactionType, XitiqueStatus } from '../types';
 import { formatDate, addPeriod } from '../services/dateUtils';
 import { formatCurrency } from '../services/formatUtils';
-import { analyzeFairness } from '../services/geminiService';
+import { analyzeFairness, suggestAdjustments, AdjustmentSuggestion } from '../services/geminiService';
 import { saveXitique, deleteParticipant } from '../services/storage';
 import { createTransaction, calculateCyclePot, calculateDynamicPot } from '../services/financeLogic';
-import { Sparkles, Calendar, DollarSign, Users, ArrowLeft, Trash, CheckCircle2, Clock, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save, Download, ThumbsUp, Hash, XCircle, FileText, Activity, PenTool, PlayCircle, Lock, Unlock, Shuffle, Coins, Settings, RotateCcw, ArrowDownRight, LogIn } from 'lucide-react';
+import { ArrowLeft, Trash, CheckCircle2, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save, Download, ThumbsUp, Hash, XCircle, FileText, Activity, PenTool, PlayCircle, Lock, Unlock, Shuffle, Coins, Settings, RotateCcw, ArrowDownRight, LogIn, Loader2, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import FinancialTip from './FinancialTip';
 import ConfirmationModal from './ConfirmationModal';
+import XitiqueHeader from './XitiqueHeader';
+import ParticipantList from './ParticipantList';
+import ActionToolbar from './ActionToolbar';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -28,7 +32,9 @@ const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDel
   const { addToast } = useToast();
   const [xitique, setXitique] = useState<Xitique>(initialXitique);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<AdjustmentSuggestion[]>([]);
   const [loadingAi, setLoadingAi] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'schedule' | 'analysis' | 'history'>('schedule');
 
   // --- Global Edit Mode State ---
@@ -84,7 +90,61 @@ const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDel
     setTempName(initialXitique.name);
     setTempAmount(initialXitique.amount);
     setTempStartDate(initialXitique.startDate ? new Date(initialXitique.startDate).toISOString().split('T')[0] : '');
+    
+    // Reset AI state when xitique changes
+    setAiAnalysis(null);
+    setAiSuggestions([]);
   }, [initialXitique]);
+
+  const runAiAnalysis = async () => {
+    setLoadingAi(true);
+    try {
+      const [analysis, suggestions] = await Promise.all([
+        analyzeFairness(xitique),
+        suggestAdjustments(xitique)
+      ]);
+      setAiAnalysis(analysis);
+      setAiSuggestions(suggestions);
+    } catch (error) {
+      console.error("AI Error:", error);
+      addToast("Erro ao processar análise da IA", "error");
+    } finally {
+      setLoadingAi(false);
+    }
+  };
+
+  const applyAiSuggestion = async (suggestion: AdjustmentSuggestion) => {
+    const updatedParticipants = xitique.participants.map(p => 
+      p.id === suggestion.participantId 
+        ? { ...p, customContribution: suggestion.suggestedContribution } 
+        : p
+    );
+    
+    const updatedXitique = { ...xitique, participants: updatedParticipants };
+    await saveXitique(updatedXitique);
+    setXitique(updatedXitique);
+    
+    // Remove suggestion from list
+    setAiSuggestions(prev => prev.filter(s => s.participantId !== suggestion.participantId));
+    addToast(`Ajuste aplicado para ${xitique.participants.find(p => p.id === suggestion.participantId)?.name}`, 'success');
+  };
+
+  const applyAllSuggestions = async () => {
+    let updatedParticipants = [...xitique.participants];
+    aiSuggestions.forEach(suggestion => {
+      updatedParticipants = updatedParticipants.map(p => 
+        p.id === suggestion.participantId 
+          ? { ...p, customContribution: suggestion.suggestedContribution } 
+          : p
+      );
+    });
+
+    const updatedXitique = { ...xitique, participants: updatedParticipants };
+    await saveXitique(updatedXitique);
+    setXitique(updatedXitique);
+    setAiSuggestions([]);
+    addToast("Todos os ajustes foram aplicados", 'success');
+  };
 
   // --- Helper Functions ---
 
@@ -218,50 +278,58 @@ const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDel
   };
 
   const handleSaveGlobalEdit = async () => {
-    let updatedParticipants = [...xitique.participants];
-    
-    // Check if start date changed
-    const oldDate = xitique.startDate ? new Date(xitique.startDate).toISOString().split('T')[0] : '';
-    const newDate = tempStartDate;
-    const dateChanged = oldDate !== newDate;
+    setIsSaving(true);
+    try {
+        let updatedParticipants = [...xitique.participants];
+        
+        // Check if start date changed
+        const oldDate = xitique.startDate ? new Date(xitique.startDate).toISOString().split('T')[0] : '';
+        const newDate = tempStartDate;
+        const dateChanged = oldDate !== newDate;
 
-    // Check if base amount changed (check for risk)
-    const amountChanged = xitique.amount !== tempAmount;
+        // Check if base amount changed (check for risk)
+        const amountChanged = xitique.amount !== tempAmount;
 
-    // Apply Date Updates if changed
-    if (dateChanged) {
-        updatedParticipants = updatedParticipants.map((p, index) => ({
-            ...p,
-            payoutDate: addPeriod(newDate, xitique.frequency, index)
-        }));
+        // Apply Date Updates if changed
+        if (dateChanged) {
+            updatedParticipants = updatedParticipants.map((p, index) => ({
+                ...p,
+                payoutDate: addPeriod(newDate, xitique.frequency, index)
+            }));
+        }
+
+        // Determine Status
+        let newStatus = xitique.status;
+        if (amountChanged) {
+            const hasRisk = updatedParticipants.some(p => {
+                const val = p.customContribution !== undefined ? p.customContribution : tempAmount;
+                return val !== tempAmount;
+            });
+            newStatus = hasRisk ? XitiqueStatus.RISK : XitiqueStatus.ACTIVE;
+        }
+
+        const updatedXitique = {
+            ...xitique,
+            name: tempName,
+            amount: tempAmount,
+            startDate: new Date(newDate).toISOString(),
+            participants: updatedParticipants,
+            status: newStatus
+        };
+
+        await saveXitique(updatedXitique);
+        
+        // Apply to local state
+        setXitique(updatedXitique);
+
+        setIsGlobalEditMode(false);
+        addToast(t('common.success'), 'success');
+    } catch (error) {
+        console.error(error);
+        addToast(t('common.error'), 'error');
+    } finally {
+        setIsSaving(false);
     }
-
-    // Determine Status
-    let newStatus = xitique.status;
-    if (amountChanged) {
-        const hasRisk = updatedParticipants.some(p => {
-             const val = p.customContribution !== undefined ? p.customContribution : tempAmount;
-             return val !== tempAmount;
-        });
-        newStatus = hasRisk ? XitiqueStatus.RISK : XitiqueStatus.ACTIVE;
-    }
-
-    const updatedXitique = {
-        ...xitique,
-        name: tempName,
-        amount: tempAmount,
-        startDate: new Date(newDate).toISOString(),
-        participants: updatedParticipants,
-        status: newStatus
-    };
-
-    await saveXitique(updatedXitique);
-    
-    // Apply to local state
-    setXitique(updatedXitique);
-
-    setIsGlobalEditMode(false);
-    addToast('Alterações salvas com sucesso!', 'success');
   };
 
   const handleAddMember = async () => {
@@ -463,452 +531,295 @@ const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDel
         confirmText={confirmModal.confirmText}
       />
 
-      {/* --- Top Bar --- */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <button onClick={onBack} className="flex items-center text-slate-500 hover:text-slate-900 transition-colors font-medium">
-          <ArrowLeft size={20} className="mr-2" /> {t('detail.back')}
-        </button>
-        
-        <div className="flex gap-2">
-            {!isGlobalEditMode && !isCompleted && (
-                <button 
-                    onClick={() => setIsGlobalEditMode(true)}
-                    className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center text-sm font-bold shadow-md hover:bg-slate-800 transition-all"
-                >
-                    <Settings size={18} className="mr-2" /> Editar Grupo
-                </button>
-            )}
-            {isGlobalEditMode && (
-                <>
-                    <button onClick={handleCancelGlobalEdit} className="bg-white text-slate-600 border border-slate-300 px-4 py-2 rounded-xl font-bold text-sm">
-                        Cancelar
-                    </button>
-                    <button onClick={handleSaveGlobalEdit} className="bg-emerald-500 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg shadow-emerald-200 flex items-center gap-2">
-                        <Save size={18} /> Salvar Alterações
-                    </button>
-                </>
-            )}
-            
-            {!isGlobalEditMode && (
-                <div className="flex gap-2">
-                    <button onClick={handleShare} className="bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50 px-3 py-2 rounded-xl">
-                        <Share2 size={18} />
-                    </button>
-                    <button onClick={() => {
-                        setConfirmModal({
-                            isOpen: true,
-                            type: 'danger',
-                            title: t('modal.delete_title'),
-                            desc: t('modal.delete_desc'),
-                            confirmText: t('modal.confirm_delete'),
-                            action: onDelete
-                        });
-                    }} className="text-red-400 hover:bg-red-50 px-3 py-2 rounded-xl">
-                        <Trash size={18} />
-                    </button>
-                </div>
-            )}
-        </div>
-      </div>
+      <ActionToolbar 
+        isEditMode={isGlobalEditMode}
+        isCompleted={isCompleted}
+        isSaving={isSaving}
+        onBack={onBack}
+        onEditToggle={() => setIsGlobalEditMode(true)}
+        onCancelEdit={handleCancelGlobalEdit}
+        onSaveEdit={handleSaveGlobalEdit}
+        onShare={handleShare}
+        onDelete={() => {
+            setConfirmModal({
+                isOpen: true,
+                type: 'danger',
+                title: t('modal.delete_title'),
+                desc: t('modal.delete_desc'),
+                confirmText: t('modal.confirm_delete'),
+                action: onDelete
+            });
+        }}
+      />
 
       <FinancialTip context="group" />
 
-      {/* --- Main Info Card --- */}
-      <div className={`bg-slate-900 text-white rounded-3xl p-8 shadow-xl relative overflow-hidden transition-all ${isGlobalEditMode ? 'ring-4 ring-emerald-500/30 scale-[1.01]' : ''}`}>
-        <div className="absolute right-0 top-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-
-        <div className="relative z-10">
-            {/* Header / Title / Status */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                 {isGlobalEditMode ? (
-                    <div className="flex-1">
-                        <label className="text-xs text-slate-400 font-bold uppercase block mb-1">Nome do Grupo</label>
-                        <input 
-                            type="text" 
-                            value={tempName}
-                            onChange={(e) => setTempName(e.target.value)}
-                            className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-3xl font-bold text-white w-full focus:ring-2 focus:ring-emerald-500 outline-none"
-                        />
-                    </div>
-                ) : (
-                    <div className="flex flex-col gap-2">
-                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight flex items-center gap-3">
-                            {xitique.name}
-                        </h1>
-                        <div className="flex items-center gap-2">
-                             <span className={`${currentBadge.color} ${currentBadge.textColor} text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-sm ring-1 ring-white/10`}>
-                                {currentBadge.icon} {currentBadge.text}
-                            </span>
-                            <span className="bg-white/10 backdrop-blur text-slate-300 border border-white/10 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">
-                                {xitique.frequency === 'WEEKLY' ? t('wiz.weekly') : xitique.frequency === 'MONTHLY' ? t('wiz.monthly') : t('wiz.daily')}
-                            </span>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Progress Bar */}
-            {!isGlobalEditMode && (
-                <div className="mb-8">
-                   <div className="flex justify-between text-xs font-medium text-slate-400 mb-2">
-                      <span>Progresso do Ciclo</span>
-                      <span>{Math.round(progressPercentage)}%</span>
-                   </div>
-                   <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
-                       <div 
-                          className={`h-3 rounded-full transition-all duration-1000 ease-out ${isCompleted ? 'bg-indigo-500' : 'bg-gradient-to-r from-emerald-500 to-cyan-500'}`}
-                          style={{ width: `${progressPercentage}%` }}
-                       ></div>
-                   </div>
-                </div>
-            )}
-
-            <div className="flex flex-wrap gap-4">
-                {/* Cycle Volume / Pot */}
-                <div className={`flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10 relative ${isGlobalEditMode ? 'bg-slate-800 border-slate-600' : ''}`}>
-                    <div className="bg-emerald-400/20 p-2 rounded-lg">
-                        <DollarSign size={20} className="text-emerald-400" />
-                    </div>
-                    <div>
-                        <div className="text-xs text-slate-300 uppercase font-semibold flex items-center gap-2">
-                            Volume Total do Ciclo
-                        </div>
-                        {isGlobalEditMode ? (
-                             <input 
-                                type="number"
-                                value={tempAmount}
-                                onChange={(e) => setTempAmount(Number(e.target.value))}
-                                className="bg-transparent border-b border-slate-500 w-24 text-xl font-bold text-white focus:outline-none focus:border-emerald-500"
-                             />
-                        ) : (
-                             <div className="text-xl font-bold">{formatCurrency(totalPotentialFlow)}</div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Start Date & Recalculation */}
-                <div className={`flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10 ${isGlobalEditMode ? 'bg-slate-800 border-slate-600' : ''}`}>
-                    <div className="bg-purple-400/20 p-2 rounded-lg">
-                        <Calendar size={20} className="text-purple-400" />
-                    </div>
-                    <div>
-                        <div className="text-xs text-slate-300 uppercase font-semibold">{t('detail.start_date')}</div>
-                        {isGlobalEditMode ? (
-                            <div className="flex flex-col">
-                                <input 
-                                    type="date"
-                                    value={tempStartDate}
-                                    onChange={(e) => setTempStartDate(e.target.value)}
-                                    className="bg-transparent text-white font-bold text-sm focus:outline-none w-32"
-                                />
-                                <span className="text-[10px] text-emerald-400 mt-0.5">*Datas futuras serão ajustadas</span>
-                            </div>
-                        ) : (
-                            <div className="text-xl font-bold">{formatDate(xitique.startDate)}</div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Invite Code */}
-                {xitique.inviteCode && (
-                    <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10">
-                        <div className="bg-blue-400/20 p-2 rounded-lg">
-                            <LogIn size={20} className="text-blue-400" />
-                        </div>
-                        <div>
-                            <div className="text-xs text-slate-300 uppercase font-semibold">Invite Code</div>
-                            <div className="text-xl font-bold font-mono tracking-wider">{xitique.inviteCode}</div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Member Count */}
-                <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10">
-                    <div className="bg-blue-400/20 p-2 rounded-lg">
-                        <Users size={20} className="text-blue-400" />
-                    </div>
-                    <div>
-                        <div className="text-xs text-slate-300 uppercase font-semibold">{t('detail.members')}</div>
-                        <div className="text-xl font-bold">{xitique.participants.length}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-      </div>
+      <XitiqueHeader 
+        xitique={xitique}
+        isEditMode={isGlobalEditMode}
+        tempName={tempName}
+        tempAmount={tempAmount}
+        tempStartDate={tempStartDate}
+        totalVolume={totalPotentialFlow}
+        onNameChange={setTempName}
+        onAmountChange={setTempAmount}
+        onStartDateChange={setTempStartDate}
+      />
 
       {/* --- Main Content Area --- */}
       
       {/* Tabs */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex border-b border-slate-200 dark:border-slate-800">
         <button 
           onClick={() => setActiveTab('schedule')}
-          className={`pb-4 px-6 font-semibold text-sm transition-colors relative ${activeTab === 'schedule' ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`pb-4 px-6 font-semibold text-sm transition-colors relative ${activeTab === 'schedule' ? 'text-slate-900 dark:text-white' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
         >
           {t('detail.tab_schedule')}
-          {activeTab === 'schedule' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-500 rounded-t-full" />}
+          {activeTab === 'schedule' && (
+            <motion.div 
+              layoutId="activeTab"
+              className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-500 rounded-t-full" 
+            />
+          )}
+        </button>
+        <button 
+          onClick={() => setActiveTab('analysis')}
+          className={`pb-4 px-6 font-semibold text-sm transition-colors relative ${activeTab === 'analysis' ? 'text-slate-900 dark:text-white' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+        >
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} className={activeTab === 'analysis' ? 'text-amber-500' : ''} />
+            {t('detail.tab_analysis') || 'Análise IA'}
+          </div>
+          {activeTab === 'analysis' && (
+            <motion.div 
+              layoutId="activeTab"
+              className="absolute bottom-0 left-0 w-full h-0.5 bg-amber-500 rounded-t-full" 
+            />
+          )}
         </button>
         <button 
           onClick={() => setActiveTab('history')}
-          className={`pb-4 px-6 font-semibold text-sm transition-colors relative ${activeTab === 'history' ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+          className={`pb-4 px-6 font-semibold text-sm transition-colors relative ${activeTab === 'history' ? 'text-slate-900 dark:text-white' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
         >
-          Histórico
-          {activeTab === 'history' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500 rounded-t-full" />}
+          {t('dash.tab_history') || 'Histórico'}
+          {activeTab === 'history' && (
+            <motion.div 
+              layoutId="activeTab"
+              className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500 rounded-t-full" 
+            />
+          )}
         </button>
       </div>
 
+      <AnimatePresence mode="wait">
       {activeTab === 'schedule' && (
-        <div className="space-y-4">
-          
-          {/* List Header / Filters */}
-          <div className="bg-slate-100 p-4 -mx-4 md:mx-0 md:rounded-2xl border-y md:border border-slate-200 shadow-inner mb-4 transition-all">
-             <div className="flex flex-col md:flex-row gap-4 items-center">
-                 <div className="flex-1 relative w-full">
-                     <Search className="absolute left-4 top-3.5 text-slate-400 pointer-events-none" size={20} />
-                     <input 
-                       type="text" 
-                       placeholder={t('detail.search_placeholder')} 
-                       className="w-full pl-12 pr-10 py-3 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm font-bold text-slate-700 shadow-sm transition-all placeholder:font-normal placeholder:text-slate-400"
-                       value={searchTerm}
-                       onChange={(e) => setSearchTerm(e.target.value)}
-                     />
-                     {searchTerm && (
-                        <button 
-                            onClick={() => setSearchTerm('')} 
-                            className="absolute right-3 top-3 p-1 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"
-                        >
-                            <XCircle size={16} />
-                        </button>
-                     )}
-                 </div>
-                 
-                 {!isGlobalEditMode && (
-                     <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-                         <button 
-                            onClick={() => handleSort('name')} 
-                            className={`px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm border ${sortConfig.key === 'name' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-                         >
-                            <ArrowUpDown size={16} className={sortConfig.key === 'name' ? 'text-emerald-400' : 'text-slate-400'} /> 
-                            {t('detail.sort_name')}
-                         </button>
-                         <button 
-                            onClick={() => handleSort('payoutDate')} 
-                            className={`px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm border ${sortConfig.key === 'payoutDate' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'}`}
-                         >
-                            <Calendar size={16} className={sortConfig.key === 'payoutDate' ? 'text-emerald-400' : 'text-slate-400'} /> 
-                            {t('detail.sort_date')}
-                         </button>
-                         <button 
-                            onClick={() => handleSort('received')} 
-                            className={`px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm border ${sortConfig.key === 'received' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'}`}
-                         >
-                            <CheckSquare size={16} className={sortConfig.key === 'received' ? 'text-emerald-400' : 'text-slate-400'} /> 
-                            {t('detail.sort_status')}
-                         </button>
-                     </div>
-                 )}
-             </div>
-          </div>
-          
-          {/* Add Member Button (Only in Edit Mode) */}
-          {isGlobalEditMode && (
-                <button 
-                    onClick={handleAddMember}
-                    className="w-full py-4 border-2 border-dashed border-emerald-300 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-700 font-bold hover:bg-emerald-100 transition-all gap-2 shadow-sm"
-                >
-                    <Plus size={20} /> Adicionar Novo Membro
-                </button>
-          )}
+        <motion.div
+          key="schedule"
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 10 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ParticipantList 
+              xitique={xitique}
+              participants={processedParticipants}
+              isEditMode={isGlobalEditMode}
+              searchTerm={searchTerm}
+              sortConfig={sortConfig}
+              lockedIds={lockedIds}
+              editForm={editForm}
+              onSearchChange={setSearchTerm}
+              onSort={handleSort}
+              onAddMember={handleAddMember}
+              onTogglePayment={handleToggleClick}
+              onEditClick={startEditingParticipant}
+              onDeleteClick={handleDeleteMemberClick}
+              onLockToggle={toggleLock}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onEditFormChange={setEditForm}
+              onSaveEdit={saveParticipantChanges}
+              onCancelEdit={() => setEditForm(null)}
+          />
+        </motion.div>
+      )}
 
-          {/* Members Grid/List */}
-          <div className="grid gap-3">
-            {processedParticipants.map((p, idx) => {
-              const isEditing = editForm?.id === p.id;
-              const isLocked = lockedIds.has(p.id);
-              const receivableAmount = calculateDynamicPot(xitique, p);
-              const personalCap = p.customContribution !== undefined ? p.customContribution : xitique.amount;
-              const isVariableAmount = p.customContribution !== undefined && p.customContribution !== xitique.amount;
-              
-              return (
-              <div 
-                key={p.id} 
-                draggable={canDrag && !isEditing && !isLocked}
-                onDragStart={(e) => handleDragStart(e, p.id)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, p.id)}
-                className={`flex flex-col md:flex-row md:items-center justify-between p-4 rounded-2xl border transition-all ${
-                  isEditing ? 'bg-indigo-50 border-indigo-200 shadow-lg ring-1 ring-indigo-300 relative z-10' : 
-                  isLocked ? 'bg-rose-50 border-rose-200' :
-                  isGlobalEditMode ? 'bg-white border-dashed border-slate-300 hover:border-emerald-400 cursor-move' :
-                  p.received 
-                    ? 'bg-slate-50 border-slate-100 opacity-75' 
-                    : 'bg-white border-slate-200 hover:border-emerald-300 hover:shadow-md'
-                }`}
+      {activeTab === 'analysis' && (
+        <motion.div
+          key="analysis"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+          className="space-y-6"
+        >
+          {!aiAnalysis && !loadingAi ? (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-100 dark:border-slate-800 shadow-sm">
+              <div className="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-full flex items-center justify-center mx-auto mb-6 text-amber-500">
+                <Sparkles size={40} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Assistente de Justiça IA</h3>
+              <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                Nossa IA pode analisar seu grupo para garantir que todos recebam um valor justo, especialmente em grupos com contribuições variadas.
+              </p>
+              <button 
+                onClick={runAiAnalysis}
+                className="bg-slate-900 dark:bg-white dark:text-slate-900 text-white px-8 py-3 rounded-xl font-bold shadow-xl hover:scale-105 transition-all flex items-center gap-2 mx-auto"
               >
-                <div className="flex items-center gap-4 mb-4 md:mb-0 w-full md:w-auto">
-                  {/* Drag Handle or Lock Status */}
-                  <div className={`w-6 flex justify-center ${canDrag ? 'text-slate-400' : 'text-slate-200'}`}>
-                     {isGlobalEditMode && !isLocked && <GripVertical size={20} />}
-                     {isLocked && <Lock size={16} className="text-rose-400" />}
+                <RefreshCw size={18} /> Começar Análise
+              </button>
+            </div>
+          ) : loadingAi ? (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-20 text-center border border-slate-100 dark:border-slate-800 shadow-sm">
+              <Loader2 size={48} className="animate-spin text-amber-500 mx-auto mb-6" />
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Analisando Equilíbrio Financeiro...</h3>
+              <p className="text-slate-500 dark:text-slate-400">Isso pode levar alguns segundos.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-sm border border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <FileText className="text-amber-500" /> Relatório de Justiça
+                    </h3>
+                    <button 
+                      onClick={runAiAnalysis}
+                      className="text-xs font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                    >
+                      <RefreshCw size={12} /> Atualizar
+                    </button>
                   </div>
-
-                  {/* Status Checkbox */}
-                  {!isGlobalEditMode && (
-                      <button 
-                          onClick={() => handleToggleClick(p.id)}
-                          disabled={isCompleted}
-                          className={`transition-colors p-1 rounded-md ${p.received ? 'text-emerald-500 hover:text-emerald-600' : 'text-slate-300 hover:text-slate-500'}`}
-                      >
-                          {p.received ? <CheckSquare size={24} /> : <Square size={24} />}
-                      </button>
-                  )}
-
-                  {/* Index */}
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0 ${p.received ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
-                    {p.order}
+                  <div className="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                    {aiAnalysis}
                   </div>
-
-                  {/* Avatar - Unique Icon per User */}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0 overflow-hidden ring-2 ring-white ${getAvatarColor(p.name)}`}>
-                      {p.name.charAt(0).toUpperCase()}
-                  </div>
-
-                  {/* Details or Edit Form */}
-                  <div className="flex-1 min-w-[200px]">
-                    {isEditing ? (
-                        // INLINE EDIT FORM
-                        <div className="flex flex-col md:flex-row gap-2 md:items-center w-full">
-                             <div className="flex-1">
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Nome</label>
-                                <input 
-                                    type="text" 
-                                    value={editForm.name} 
-                                    onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                                    className="font-bold text-slate-900 border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none w-full"
-                                    placeholder="Nome"
-                                    autoFocus
-                                />
-                             </div>
-                             <div className="flex gap-2">
-                                <div className="relative w-32">
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Capacidade (MT)</label>
-                                    <span className="absolute left-2 bottom-2.5 text-xs font-bold text-slate-400">MT</span>
-                                    <input 
-                                        type="number"
-                                        value={editForm.amount}
-                                        onChange={(e) => setEditForm({...editForm, amount: Number(e.target.value)})}
-                                        className="w-full pl-8 p-2 border border-slate-300 rounded-lg font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-                                    />
-                                </div>
-                                <div className="w-32">
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5">Data Pagamento</label>
-                                    <input 
-                                        type="date" 
-                                        value={editForm.date} 
-                                        onChange={(e) => setEditForm({...editForm, date: e.target.value})}
-                                        className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-                                    />
-                                </div>
-                             </div>
-                             <div className="flex gap-1 items-end pb-0.5">
-                                <button onClick={saveParticipantChanges} className="bg-emerald-500 text-white p-2 rounded-lg hover:bg-emerald-600"><Check size={16}/></button>
-                                <button onClick={() => setEditForm(null)} className="bg-slate-200 text-slate-600 p-2 rounded-lg hover:bg-slate-300"><X size={16}/></button>
-                             </div>
-                        </div>
-                    ) : (
-                        // DISPLAY MODE
-                        <div onClick={() => isGlobalEditMode && startEditingParticipant(p)} className={isGlobalEditMode ? 'cursor-pointer hover:bg-slate-50 p-1 rounded-lg -ml-1 transition-colors' : ''}>
-                             <div className="flex items-center gap-2 mb-1">
-                                <h3 className={`font-bold text-lg ${p.received ? 'text-emerald-900 line-through decoration-emerald-500/50' : 'text-slate-900'}`}>
-                                    {p.name}
-                                </h3>
-                                {p.received && <CheckCircle2 size={16} className="text-emerald-500" />}
-                                {isVariableAmount && (
-                                    <div className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 border border-rose-200 shadow-sm" title="Capacidade de Contribuição Mensal">
-                                        <ArrowDownRight size={10} /> Cap: {formatCurrency(personalCap)}
-                                    </div>
-                                )}
-                                {isGlobalEditMode && <Pencil size={12} className="text-slate-400" />}
-                             </div>
-                            <div className="flex items-center gap-4 text-sm">
-                                <div className="flex items-center gap-1 text-slate-500 font-medium">
-                                    <Calendar size={12} />
-                                    {p.payoutDate ? formatDate(p.payoutDate) : t('detail.date_tbd')}
-                                </div>
-                                <div className="flex items-center gap-1 font-mono font-bold text-emerald-600" title="Valor a Receber (Pote Dinâmico)">
-                                    <DollarSign size={12} /> Recebe: {formatCurrency(receivableAmount)}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right Side Actions */}
-                <div className="flex items-center justify-end gap-2 mt-4 md:mt-0 pl-12 md:pl-0">
-                   {isGlobalEditMode && !isEditing && (
-                       <button 
-                           onClick={(e) => { e.stopPropagation(); handleDeleteMemberClick(p); }}
-                           className="p-2 bg-white text-red-400 hover:text-red-600 hover:bg-red-50 border border-slate-200 hover:border-red-200 rounded-xl transition-all shadow-sm"
-                           title="Remover Membro"
-                       >
-                           <Trash size={18} />
-                       </button>
-                   )}
-                   
-                   {!isGlobalEditMode && (
-                        <div className={`px-3 py-1.5 rounded-lg text-xs font-bold ${p.received ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                            {p.received ? 'PAGO' : 'PENDENTE'}
-                        </div>
-                   )}
                 </div>
               </div>
-            )})}
-          </div>
-        </div>
+
+              <div className="space-y-6">
+                <div className="bg-amber-50 dark:bg-amber-900/10 rounded-3xl p-6 border border-amber-100 dark:border-amber-900/30">
+                  <h3 className="text-sm font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <PenTool size={16} /> Ajustes Sugeridos
+                  </h3>
+                  
+                  {aiSuggestions.length === 0 ? (
+                    <div className="text-center py-8">
+                      <ThumbsUp size={32} className="mx-auto mb-2 text-amber-300" />
+                      <p className="text-xs text-amber-700 dark:text-amber-500 font-medium">Tudo parece equilibrado! Nenhum ajuste automático necessário.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] font-bold text-amber-600 uppercase">{aiSuggestions.length} Sugestões</span>
+                        <button 
+                          onClick={applyAllSuggestions}
+                          className="text-[10px] font-bold text-amber-800 underline"
+                        >
+                          Aplicar Todos
+                        </button>
+                      </div>
+                      {aiSuggestions.map((suggestion, idx) => {
+                        const p = xitique.participants.find(part => part.id === suggestion.participantId);
+                        if (!p) return null;
+                        return (
+                          <div key={idx} className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-amber-200 dark:border-amber-900/50 shadow-sm">
+                            <div className="flex justify-between items-start mb-2">
+                              <span className="font-bold text-slate-900 dark:text-white text-sm">{p.name}</span>
+                              <span className="text-[10px] font-black text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">
+                                {formatCurrency(suggestion.suggestedContribution)}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3 leading-tight">{suggestion.reason}</p>
+                            <button 
+                              onClick={() => applyAiSuggestion(suggestion)}
+                              className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold rounded-lg transition-colors"
+                            >
+                              Aplicar Ajuste
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </motion.div>
       )}
 
-      {/* History Tab */}
       {activeTab === 'history' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            {!xitique.transactions || xitique.transactions.length === 0 ? (
-                <div className="p-12 text-center text-slate-400">
-                    <History size={48} className="mx-auto mb-4 opacity-20" />
-                    <p>{t('detail.empty_history')}</p>
+        <motion.div
+          key="history"
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -10 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 animate-fade-in">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <History className="text-blue-500" /> {t('dash.tab_history')}
+              </h3>
+              <div className="flex gap-2">
+                  <button 
+                      onClick={() => {
+                          const doc = new jsPDF();
+                          doc.text(`Relatório: ${xitique.name}`, 10, 10);
+                          autoTable(doc, {
+                              head: [['Data', 'Tipo', 'Descrição', 'Valor']],
+                              body: (xitique.transactions || []).map(t => [
+                                  formatDate(t.date) || '',
+                                  t.type || '',
+                                  t.description || '',
+                                  formatCurrency(t.amount) || ''
+                              ]),
+                          });
+                          doc.save(`xitique_${xitique.id}.pdf`);
+                          addToast(t('detail.export_success'), 'success');
+                      }}
+                      className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                      <Download size={14} /> PDF
+                  </button>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              {(xitique.transactions || []).length === 0 ? (
+                <div className="text-center py-12 text-slate-400 dark:text-slate-600 italic">
+                  {t('detail.empty_history') || 'Nenhuma transação registrada ainda.'}
                 </div>
-            ) : (
-                <div className="divide-y divide-slate-100">
-                    {xitique.transactions.map((tx) => (
-                        <div key={tx.id} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
-                            <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                    tx.type === TransactionType.PAYOUT ? 'bg-emerald-100 text-emerald-600' :
-                                    tx.type === TransactionType.PAYOUT_REVERSAL ? 'bg-amber-100 text-amber-600' :
-                                    'bg-slate-100 text-slate-500'
-                                }`}>
-                                    {tx.type === TransactionType.PAYOUT_REVERSAL ? <RotateCcw size={18} /> : <CheckCircle2 size={18} />}
-                                </div>
-                                <div>
-                                    <div className="font-bold text-slate-900 text-sm">{tx.description}</div>
-                                    <div className="text-xs text-slate-500 flex items-center gap-2">
-                                        <span>{new Date(tx.date).toLocaleDateString()}</span>
-                                        <span>{new Date(tx.date).toLocaleTimeString()}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <div className={`font-bold font-mono ${
-                                    tx.type === TransactionType.PAYOUT_REVERSAL ? 'text-slate-400 line-through decoration-red-400' : 'text-emerald-600'
-                                }`}>
-                                    {formatCurrency(tx.amount)}
-                                </div>
-                                <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{tx.type}</div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
+              ) : (
+                (xitique.transactions || []).map(tx => (
+                  <div key={tx.id} className="flex items-center justify-between p-4 rounded-xl border border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${
+                        tx.type === TransactionType.PAYOUT ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' : 
+                        tx.type === TransactionType.PAYOUT_REVERSAL ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                        'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                      }`}>
+                        {tx.type === TransactionType.PAYOUT ? <ArrowDownRight size={18} /> : <RotateCcw size={18} />}
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-900 dark:text-white text-sm">{tx.description}</div>
+                        <div className="text-[10px] text-slate-400 font-medium uppercase">{formatDate(tx.date)}</div>
+                      </div>
+                    </div>
+                    <div className={`font-black ${
+                      tx.type === TransactionType.PAYOUT ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                    }`}>
+                      {tx.type === TransactionType.PAYOUT ? '-' : '+'}{formatCurrency(tx.amount)}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 };
