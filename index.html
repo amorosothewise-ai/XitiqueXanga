@@ -10,29 +10,35 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
-      // Polyfill for process and global
-      window.process = {
-        env: {
-          NODE_ENV: 'production',
-          API_KEY: '',
-          VITE_SUPABASE_URL: '',
-          VITE_SUPABASE_ANON_KEY: ''
-        }
-      };
+      // Polyfill for global
       window.global = window;
+      
+      // Safe process polyfill that won't be clobbered by Vite's define replacement
+      window['process'] = window['process'] || {};
+      window['process']['env'] = window['process']['env'] || {};
 
       // Global error handler to catch initialization errors
       window.onerror = function(message, source, lineno, colno, error) {
         console.error("Global Error Caught: ", message, " at ", source, ":", lineno);
         const root = document.getElementById('root');
-        if (root && root.innerHTML === '') {
-          root.innerHTML = '<div style="padding: 20px; color: red; font-family: sans-serif;">' +
-            '<h2>Erro de Inicialização</h2>' +
-            '<p>' + message + '</p>' +
-            '<p>Por favor, verifique o console do navegador para mais detalhes.</p>' +
+        // Only show error if app hasn't loaded yet (still showing loading text)
+        if (root && (root.innerText.includes('Carregando') || root.innerHTML === '')) {
+          root.innerHTML = '<div style="padding: 40px; text-align: center; font-family: sans-serif; background: white; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;">' +
+            '<div style="background: #fff1f2; padding: 32px; border-radius: 24px; border: 1px solid #fecdd3; max-width: 400px; width: 100%; shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);">' +
+            '<h2 style="color: #e11d48; font-size: 20px; font-weight: 700; margin-bottom: 12px;">Erro de Inicialização</h2>' +
+            '<p style="color: #64748b; font-size: 14px; line-height: 1.5; margin-bottom: 24px;">' + message + '</p>' +
+            '<button onclick="window.location.reload()" style="width: 100%; padding: 12px; background: #10b981; color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Recarregar Aplicação</button>' +
+            '</div>' +
             '</div>';
         }
       };
+
+      // Catch resource errors (like script 404s)
+      window.addEventListener('error', function(e) {
+        if (e.target.tagName === 'SCRIPT') {
+          window.onerror("Falha ao carregar componente crítico: " + e.target.src.split('/').pop());
+        }
+      }, true);
 
       // Tailwin config inside HTML for simplicity in this setup
       tailwind.config = {
@@ -103,19 +109,26 @@
 </head>
   <body>
     <div id="root">
-      <div style="display: flex; align-items: center; justify-center; height: 100vh; font-family: sans-serif; color: #64748b;">
-        <div style="text-align: center;">
-          <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #14b8a6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-          <p>Carregando Xitique Xanga...</p>
-        </div>
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #f8fafc; font-family: sans-serif;">
+        <div class="loading-spinner"></div>
+        <h2 style="margin-top: 24px; font-size: 18px; font-weight: 600; color: #1e293b; font-family: sans-serif;">Xitique Xanga</h2>
+        <p style="margin-top: 8px; font-size: 14px; color: #64748b; font-family: sans-serif;">Carregando aplicação...</p>
       </div>
     </div>
     <style>
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #14b8a6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
       @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
     </style>
-    <script type="module" src="./index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>

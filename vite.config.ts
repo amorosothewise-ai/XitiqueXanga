@@ -15,12 +15,10 @@ export default defineConfig(({ mode }) => {
       },
     },
     define: {
-      'process.env': JSON.stringify({
-        NODE_ENV: mode,
-        API_KEY: env.VITE_GEMINI_API_KEY || env.API_KEY || '',
-        VITE_SUPABASE_URL: env.VITE_SUPABASE_URL || '',
-        VITE_SUPABASE_ANON_KEY: env.VITE_SUPABASE_ANON_KEY || '',
-      }),
+      'process.env.NODE_ENV': JSON.stringify(mode),
+      'process.env.API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || env.API_KEY || ''),
+      'process.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL || ''),
+      'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY || ''),
       'global': 'window',
     },
     build: {
