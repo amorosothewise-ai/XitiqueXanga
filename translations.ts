@@ -8,6 +8,7 @@ export const translations = {
     "nav.individual": "Xitique Pessoal",
     "nav.create": "Novo",
     "nav.planner": "Planejador IA",
+    "nav.about": "Acerca",
     "nav.architecture": "Arquitetura",
     "nav.user": "Usuário Admin",
     "nav.notifications": "Notificações",
@@ -340,7 +341,19 @@ export const translations = {
     "detail.add_member": "Adicionar Novo Membro",
     "detail.no_members_found": "Nenhum membro encontrado.",
     "detail.edit_group": "Editar Grupo",
-    "common.saving": "Salvando..."
+    "common.saving": "Salvando...",
+
+    // About
+    "about.title": "Acerca do Xitique Xanga",
+    "about.mission_title": "Nossa Missão",
+    "about.mission_desc": "Digitalizar a tradição milenar do Xitique, trazendo transparência, justiça matemática e segurança para as comunidades moçambicanas.",
+    "about.feature_group_title": "Xitique de Grupo",
+    "about.feature_group_desc": "Gerencie círculos de rotação com amigos. O sistema calcula datas, gere pagamentos e garante que o pote seja distribuído sem confusões.",
+    "about.feature_ind_title": "Xitique Pessoal",
+    "about.feature_ind_desc": "A sua poupança individual com a disciplina de um grupo. Defina metas para compras ou emergências e visualize o seu progresso com previsões matemáticas de conclusão.",
+    "about.feature_ai_title": "Inteligência Artificial",
+    "about.feature_ai_process": "Integrado com o cérebro do Gemini 3 Flash, oferecemos auditorias de justiça e planeamento de metas personalizado.",
+    "about.footer": "Xitique Xanga - Onde a tradição encontra a inovação. Gerido com integridade, movido por IA."
   },
   en: {
     // Layout
@@ -350,6 +363,7 @@ export const translations = {
     "nav.individual": "Personal Xitique",
     "nav.create": "New",
     "nav.planner": "AI Planner",
+    "nav.about": "About",
     "nav.architecture": "Architecture",
     "nav.user": "User Admin",
     "nav.notifications": "Notifications",
@@ -682,6 +696,18 @@ export const translations = {
     "detail.add_member": "Add New Member",
     "detail.no_members_found": "No members found.",
     "detail.edit_group": "Edit Group",
-    "common.saving": "Saving..."
+    "common.saving": "Saving...",
+
+    // About
+    "about.title": "About Xitique Xanga",
+    "about.mission_title": "Our Mission",
+    "about.mission_desc": "To digitize the ancient tradition of Xitique, bringing transparency, mathematical fairness, and security to Mozambican communities.",
+    "about.feature_group_title": "Group Xitique",
+    "about.feature_group_desc": "Manage rotation circles with friends. The system calculates dates, manages payments, and ensures the pot is distributed without confusion.",
+    "about.feature_ind_title": "Personal Xitique",
+    "about.feature_ind_desc": "Disciplined individual savings. Set goals for purchases or emergencies and track your progress with smart completion forecasts.",
+    "about.feature_ai_title": "Artificial Intelligence",
+    "about.feature_ai_process": "Integrated with the Gemini 3 Flash brain, we offer fairness audits and personalized goal planning.",
+    "about.footer": "Xitique Xanga - Where tradition meets innovation. Managed with integrity, powered by AI."
   }
 };

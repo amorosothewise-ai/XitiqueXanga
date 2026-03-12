@@ -3,7 +3,7 @@ import { Xitique, Frequency, XitiqueStatus } from '../types';
 import { getXitiques, joinXitique } from '../services/storage';
 import { formatCurrency } from '../services/formatUtils';
 import { PlusCircle, ChevronRight, Wallet, Users, Loader2, Archive, Activity, ChevronLeft, LogIn, X, Sparkles } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';

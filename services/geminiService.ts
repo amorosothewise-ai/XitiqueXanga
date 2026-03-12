@@ -1,52 +1,100 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Xitique, XitiqueStatus } from '../types';
 import { AI_PROMPT_PREFIX } from '../constants';
 import { formatDate } from './dateUtils';
+import { supabase } from './supabase';
 
-// Removed top-level initialization to prevent crash on app load if key/process is missing.
-// Initialization now happens inside the function call.
+// --- PERSISTENCE LOGIC ---
 
-export const analyzeFairness = async (xitique: Xitique): Promise<string> => {
-  // Safe access to API Key inside the function
-  const apiKey = process.env.API_KEY;
+export interface StoredAnalysis {
+  id: string;
+  xitique_id?: string;
+  user_id: string;
+  type: 'FAIRNESS' | 'GOAL_PLAN';
+  input_data: any;
+  result: any;
+  created_at: string;
+}
+
+export const saveAIResult = async (
+  userId: string, 
+  type: StoredAnalysis['type'], 
+  inputData: any, 
+  result: any,
+  xitiqueId?: string
+) => {
+  try {
+    const { error } = await supabase
+      .from('ai_analyses')
+      .insert({
+        user_id: userId,
+        xitique_id: xitiqueId,
+        type,
+        input_data: inputData,
+        result,
+        created_at: new Date().toISOString()
+      });
+    
+    if (error) console.warn('Could not save AI result to Supabase:', error.message);
+  } catch (err) {
+    console.error('Supabase AI Save Error:', err);
+  }
+};
+
+export const getAIHistory = async (userId: string, type?: StoredAnalysis['type']): Promise<StoredAnalysis[]> => {
+  try {
+    let query = supabase
+      .from('ai_analyses')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (type) query = query.eq('type', type);
+    
+    const { data, error } = await query.limit(10);
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('Supabase AI Fetch Error:', err);
+    return [];
+  }
+};
+
+// --- ANALYSIS LOGIC ---
+
+export const analyzeFairness = async (xitique: Xitique, userId?: string): Promise<string> => {
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    return "AI Analysis unavailable: API Key not configured (process.env.API_KEY missing).";
+    return "AI Analysis unavailable: API Key not configured.";
   }
 
-  // Initialize client only when needed
   const ai = new GoogleGenAI({ apiKey });
 
   const participantList = xitique.participants.map((p, i) => 
-    `${i + 1}. ${p.name} receives on ${p.payoutDate ? formatDate(p.payoutDate) : 'TBD'} ${p.customContribution ? `(Contribuição Personalizada: ${p.customContribution})` : ''}`
+    `${i + 1}. ${p.name} recebe em ${p.payoutDate ? formatDate(p.payoutDate) : 'TBD'} ${p.customContribution ? `(Contribuição: ${p.customContribution})` : ''}`
   ).join('\n');
 
-  // Specific instruction if the group is in RISK mode due to unequal contributions
   const riskContext = xitique.status === XitiqueStatus.RISK 
-    ? "ALERTA: Este grupo está marcado com status de 'RISCO' (RISK). Alguns membros têm valores de contribuição desiguais. Você DEVE fornecer uma recomendação específica de como resolver matematicamente essa discrepância para que o pote final seja justo." 
+    ? "ALERTA: Este grupo tem contribuições desiguais. Forneça recomendações matemáticas para justiça." 
     : "";
 
   const prompt = `
     ${AI_PROMPT_PREFIX}
-
     Nome do Grupo: ${xitique.name}
-    Status Atual: ${xitique.status}
-    Contribuição Base: ${xitique.amount} por pessoa.
-    Frequência: ${xitique.frequency}
-    Total de Participantes: ${xitique.participants.length}
-    
-    Cronograma de Rotação:
+    Status: ${xitique.status}
+    Base: ${xitique.amount}
+    Freq: ${xitique.frequency}
+    Participantes: ${xitique.participants.length}
+    Cronograma:
     ${participantList}
-
     ${riskContext}
-
-    Por favor forneça:
-    1. Uma "Avaliação de Justiça" simplificada (Boa, Moderada, Precisa de Atenção).
-    2. Uma explicação amigável de quem se beneficia um pouco mais (recebedores iniciais) vs quem é o "herói poupador" (recebedores tardios).
-    3. Uma dica para gerenciar este grupo sem problemas. ${xitique.status === XitiqueStatus.RISK ? "Foque esta dica em resolver o risco financeiro." : ""}
-    
-    Mantenha curto (menos de 150 palavras). Formate com cabeçalhos claros ou tópicos.
+    Forneça:
+    1. Avaliação de Justiça (Boa, Moderada, Atenção).
+    2. Explicação de benefícios (recebedores iniciais vs tardios).
+    3. Dica de gestão.
+    Curto (<150 palavras).
   `;
 
   try {
@@ -54,11 +102,67 @@ export const analyzeFairness = async (xitique: Xitique): Promise<string> => {
       model: 'gemini-3-flash-preview',
       contents: prompt,
     });
-    return response.text || "Could not generate analysis.";
+    
+    const result = response.text || "Could not generate analysis.";
+    
+    if (userId && result !== "Could not generate analysis.") {
+      saveAIResult(userId, 'FAIRNESS', { xitiqueName: xitique.name, participantsCount: xitique.participants.length }, result, xitique.id);
+    }
+
+    return result;
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return "Unable to connect to the smart assistant. Please check your internet connection and API Key configuration.";
+    return "Erro ao conectar com o assistente inteligente.";
   }
+};
+
+export interface PlanResult {
+  targetAmount: number;
+  contribution: number;
+  frequency: string;
+  idealMonth: string;
+  explanation: string;
+}
+
+export const generateGoalPlan = async (promptText: string, language: string, userId?: string): Promise<PlanResult> => {
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("API Key missing");
+
+  const ai = new GoogleGenAI({ apiKey });
+  
+  const systemInstruction = language === 'pt' 
+    ? "Você é um consultor financeiro especialista em Xitique. Calcule um plano realista. Retorne APENAS JSON."
+    : "You are a financial advisor expert in Xitique. Calculate a realistic plan. Return ONLY JSON.";
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: promptText,
+    config: {
+      systemInstruction,
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          targetAmount: { type: Type.NUMBER },
+          contribution: { type: Type.NUMBER },
+          frequency: { type: Type.STRING },
+          idealMonth: { type: Type.STRING },
+          explanation: { type: Type.STRING }
+        },
+        required: ["targetAmount", "contribution", "frequency", "idealMonth", "explanation"]
+      }
+    }
+  });
+
+  if (!response.text) throw new Error("No response from AI");
+  
+  const result = JSON.parse(response.text) as PlanResult;
+  
+  if (userId) {
+    saveAIResult(userId, 'GOAL_PLAN', { prompt: promptText }, result);
+  }
+
+  return result;
 };
 
 export interface AdjustmentSuggestion {
@@ -68,7 +172,7 @@ export interface AdjustmentSuggestion {
 }
 
 export const suggestAdjustments = async (xitique: Xitique): Promise<AdjustmentSuggestion[]> => {
-  const apiKey = process.env.API_KEY;
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) return [];
 
   const ai = new GoogleGenAI({ apiKey });

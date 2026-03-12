@@ -1,22 +1,30 @@
-import React, { useState } from 'react';
-import { Sparkles, Target, Calendar, AlertCircle, ArrowRight, Loader2, Info } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, Target, Calendar, AlertCircle, ArrowRight, Loader2, Info, History } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { GoogleGenAI, Type } from '@google/genai';
-
-interface PlanResult {
-  targetAmount: number;
-  contribution: number;
-  frequency: string;
-  idealMonth: string;
-  explanation: string;
-}
+import { useAuth } from '../contexts/AuthContext';
+import { generateGoalPlan, getAIHistory, StoredAnalysis, PlanResult } from '../services/geminiService';
 
 const AIGoalPlanner: React.FC = () => {
   const { t, language } = useLanguage();
+  const { user } = useAuth();
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<PlanResult | null>(null);
   const [error, setError] = useState('');
+  const [history, setHistory] = useState<StoredAnalysis[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      loadHistory();
+    }
+  }, [user]);
+
+  const loadHistory = async () => {
+    if (!user) return;
+    const data = await getAIHistory(user.id, 'GOAL_PLAN');
+    setHistory(data);
+  };
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -26,48 +34,21 @@ const AIGoalPlanner: React.FC = () => {
     setPlan(null);
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error("API Key missing");
-      }
-      const ai = new GoogleGenAI({ apiKey });
-      
-      const systemInstruction = language === 'pt' 
-        ? "Você é um consultor financeiro especialista em Xitique (poupança rotativa). O usuário dirá um objetivo de compra. Você deve calcular um plano de Xitique realista. Retorne APENAS um JSON válido."
-        : "You are a financial advisor expert in Xitique (rotating savings). The user will state a purchase goal. You must calculate a realistic Xitique plan. Return ONLY valid JSON.";
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-        config: {
-          systemInstruction,
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              targetAmount: { type: Type.NUMBER, description: "The total amount needed" },
-              contribution: { type: Type.NUMBER, description: "The suggested periodic contribution amount" },
-              frequency: { type: Type.STRING, description: "Suggested frequency (e.g., 'Mensal', 'Semanal')" },
-              idealMonth: { type: Type.STRING, description: "The ideal month to receive the payout" },
-              explanation: { type: Type.STRING, description: "A short, encouraging explanation of why this plan works and how it accounts for time/inflation." }
-            },
-            required: ["targetAmount", "contribution", "frequency", "idealMonth", "explanation"]
-          }
-        }
-      });
-
-      if (response.text) {
-        const result = JSON.parse(response.text) as PlanResult;
-        setPlan(result);
-      } else {
-        throw new Error("No response");
-      }
+      const result = await generateGoalPlan(prompt, language, user?.id);
+      setPlan(result);
+      loadHistory(); // Refresh history
     } catch (err) {
       console.error(err);
       setError(t('planner.error') || "Não foi possível gerar o plano. Tente ser mais específico com valores e datas.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const useHistoryItem = (item: StoredAnalysis) => {
+    setPlan(item.result);
+    setPrompt(item.input_data.prompt);
+    setShowHistory(false);
   };
 
   return (
@@ -106,11 +87,20 @@ const AIGoalPlanner: React.FC = () => {
           </div>
         )}
 
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex justify-between items-center">
+          {history.length > 0 && (
+            <button 
+              onClick={() => setShowHistory(!showHistory)}
+              className="text-slate-500 hover:text-slate-700 flex items-center gap-2 text-sm font-bold"
+            >
+              <History size={16} />
+              {showHistory ? 'Ocultar Histórico' : 'Ver Histórico'}
+            </button>
+          )}
           <button
             onClick={handleGenerate}
             disabled={loading || !prompt.trim()}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
           >
             {loading ? (
               <>
@@ -126,6 +116,36 @@ const AIGoalPlanner: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {showHistory && history.length > 0 && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 animate-fade-in">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <History className="text-slate-400" size={18} />
+            Histórico de Planos
+          </h3>
+          <div className="space-y-3">
+            {history.map((item) => (
+              <div 
+                key={item.id} 
+                onClick={() => useHistoryItem(item)}
+                className="p-4 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors group"
+              >
+                <div className="flex justify-between items-start mb-1">
+                  <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-emerald-600 transition-colors">
+                    {item.input_data.prompt.substring(0, 40)}...
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-500">
+                  {item.result.targetAmount} MT • {item.result.frequency}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {plan && (
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 animate-fade-in">

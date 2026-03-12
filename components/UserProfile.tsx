@@ -9,6 +9,7 @@ import { uploadAvatar } from '../services/fileService';
 import { UserProfile as UserProfileType, ActivityLog } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import ImageCropper from './ImageCropper';
+import ActivityLogViewer from './ActivityLogViewer';
 
 const UserProfile: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
@@ -115,7 +116,7 @@ const UserProfile: React.FC = () => {
 
   const toggleNotification = (key: keyof UserProfileType['notificationPreferences']) => {
     if (!profile) return;
-    setProfile(prev => prev ? ({
+    setProfile((prev: UserProfileType | null) => prev ? ({
       ...prev,
       notificationPreferences: {
         ...prev.notificationPreferences,
@@ -156,7 +157,7 @@ const UserProfile: React.FC = () => {
           const publicUrl = await uploadAvatar(profile.id, blob);
           
           // Optimistic update
-          setProfile(prev => prev ? ({ ...prev, photoUrl: publicUrl }) : null);
+          setProfile((prev: UserProfileType | null) => prev ? ({ ...prev, photoUrl: publicUrl }) : null);
           
           // Persist
           await updateUserProfileData(profile.id, { photoUrl: publicUrl });
@@ -378,34 +379,7 @@ const UserProfile: React.FC = () => {
                 <FileText className="text-slate-500" /> {t('profile.audit_log')}
             </h2>
             
-            <div className="max-h-60 overflow-y-auto custom-scrollbar border border-slate-100 rounded-xl">
-                {logs.length === 0 ? (
-                    <div className="p-4 text-center text-slate-400 text-sm italic">No activity recorded.</div>
-                ) : (
-                    <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-slate-500">
-                            <tr>
-                                <th className="p-3 text-left">Action</th>
-                                <th className="p-3 text-left">Date</th>
-                                <th className="p-3 text-right">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {logs.map(log => (
-                                <tr key={log.id} className="border-t border-slate-50">
-                                    <td className="p-3 font-medium text-slate-700">{log.action}</td>
-                                    <td className="p-3 text-slate-500 text-xs">{new Date(log.timestamp).toLocaleString()}</td>
-                                    <td className="p-3 text-right">
-                                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${log.status === 'SUCCESS' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                                            {log.status}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
-            </div>
+            <ActivityLogViewer logs={logs} />
         </div>
 
         {/* Password Modal */}

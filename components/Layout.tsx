@@ -202,6 +202,12 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
                     label={t('nav.architecture')} 
                 />
                 <NavButton 
+                    active={activeView === 'about'} 
+                    onClick={() => onChangeView('about')} 
+                    icon={<Globe size={20} />} 
+                    label={t('nav.about')} 
+                />
+                <NavButton 
                     active={activeView === 'user'} 
                     onClick={() => onChangeView('user')} 
                     icon={<Settings size={20} />} 

@@ -7,9 +7,10 @@ import { analyzeFairness, suggestAdjustments, AdjustmentSuggestion } from '../se
 import { saveXitique, deleteParticipant } from '../services/storage';
 import { createTransaction, calculateCyclePot, calculateDynamicPot } from '../services/financeLogic';
 import { ArrowLeft, Trash, CheckCircle2, Pencil, X, Check, History, Calculator, AlertTriangle, AlertCircle, RefreshCw, Archive, Share2, Search, ArrowUpDown, Filter, CheckSquare, Square, GripVertical, Plus, Save, Download, ThumbsUp, Hash, XCircle, FileText, Activity, PenTool, PlayCircle, Lock, Unlock, Shuffle, Coins, Settings, RotateCcw, ArrowDownRight, LogIn, Loader2, Sparkles } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 import FinancialTip from './FinancialTip';
 import ConfirmationModal from './ConfirmationModal';
 import XitiqueHeader from './XitiqueHeader';
@@ -30,6 +31,7 @@ type SortKey = 'order' | 'name' | 'payoutDate' | 'received';
 const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDelete, onRenew }) => {
   const { t } = useLanguage();
   const { addToast } = useToast();
+  const { user } = useAuth();
   const [xitique, setXitique] = useState<Xitique>(initialXitique);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<AdjustmentSuggestion[]>([]);
@@ -100,7 +102,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDel
     setLoadingAi(true);
     try {
       const [analysis, suggestions] = await Promise.all([
-        analyzeFairness(xitique),
+        analyzeFairness(xitique, user?.id),
         suggestAdjustments(xitique)
       ]);
       setAiAnalysis(analysis);

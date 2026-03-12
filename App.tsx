@@ -8,6 +8,7 @@ import ArchitectureInfo from './components/ArchitectureInfo';
 import UserProfile from './components/UserProfile';
 import IndividualDashboard from './components/IndividualDashboard';
 import AIGoalPlanner from './components/AIGoalPlanner';
+import AboutTab from './components/AboutTab';
 import AuthScreen from './components/AuthScreen';
 import Onboarding from './components/Onboarding';
 import AppTutorial from './components/AppTutorial';
@@ -16,7 +17,7 @@ import { Xitique } from './types';
 import { deleteXitique, getUserPrefs, saveUserPrefs } from './services/storage';
 import { Loader2 } from 'lucide-react';
 
-type View = 'dashboard' | 'create' | 'detail' | 'info' | 'user' | 'individual' | 'planner';
+type View = 'dashboard' | 'create' | 'detail' | 'info' | 'user' | 'individual' | 'planner' | 'about';
 
 const App: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -139,6 +140,8 @@ const App: React.FC = () => {
           return <AIGoalPlanner />;
       case 'info':
         return <ArchitectureInfo />;
+      case 'about':
+        return <AboutTab />;
       case 'user':
         return <UserProfile />;
       default:
