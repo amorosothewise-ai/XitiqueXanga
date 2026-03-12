@@ -292,13 +292,13 @@ export const translations = {
     "scen.change_logic": "Once a Xitique is 'Active', the order is locked. The system prevents accidental changes. To change, it is recommended to Archive the current group and start a new one to preserve past data integrity.",
 
     // Tips (Context Aware)
-    "tip.did_you_know": "Financial Tip",
-    "tip.group_1": "Social trust-based Xitique groups have 95% less default rates than bank loans.",
-    "tip.group_2": "Receiving last forces you to save. It's like the group hides the money from you until the end!",
-    "tip.ind_1": "Small frequent deposits beat rare huge deposits. Consistency is key.",
-    "tip.ind_2": "Visualize what you will buy with this money. It makes today's sacrifice easier.",
-    "tip.with_1": "Caution! Withdrawing now resets your psychological 'compound interest'. Are you sure?",
-    "tip.with_2": "If it's not an emergency, try waiting 48 hours before withdrawing.",
+    "tip.did_you_know": "Dica Financeira",
+    "tip.group_1": "Grupos de Xitique baseados em confiança social têm 95% menos taxas de incumprimento do que empréstimos bancários.",
+    "tip.group_2": "Receber por último força você a poupar. É como se o grupo escondesse o dinheiro de você até o final!",
+    "tip.ind_1": "Pequenos depósitos frequentes superam grandes depósitos raros. A consistência é a chave.",
+    "tip.ind_2": "Visualize o que você vai comprar com este dinheiro. Isso torna o sacrifício de hoje mais fácil.",
+    "tip.with_1": "Cuidado! Levantar agora reseta o seu 'juro composto' psicológico. Tem certeza?",
+    "tip.with_2": "Se não for uma emergência, tente esperar 48 horas antes de levantar.",
 
     // Modals & Safety
     "modal.delete_title": "Delete Group Permanently?",

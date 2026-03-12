@@ -128,7 +128,12 @@ export const saveXitique = async (xitique: Xitique): Promise<void> => {
       return;
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
+  if (error) {
+    console.error("Error getting user:", error);
+    throw error;
+  }
+  const user = data.user;
   if (!user) throw new Error("User not authenticated");
 
   // 1. Upsert Root Xitique
