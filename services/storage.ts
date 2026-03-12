@@ -46,7 +46,7 @@ export const getXitiques = async (): Promise<Xitique[]> => {
     .select('xitique_id')
     .eq('userId', user.user.id);
   
-  const participantXitiqueIds = (participantLinks || []).map(p => p.xitique_id);
+  const participantXitiqueIds = (participantLinks || []).map((p: any) => p.xitique_id);
 
   // Fetch Xitiques
   let query = supabase

@@ -15,12 +15,13 @@ export default defineConfig(({ mode }) => {
       },
     },
     define: {
-      // We only strictly need to polyfill process.env.API_KEY for the Gemini SDK requirements.
-      // Supabase will use the native import.meta.env.VITE_...
-      // However, we also expose Supabase vars here to provide a robust fallback via process.env if import.meta.env fails.
-      'process.env.API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || env.API_KEY || ''),
-      'process.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL || ''),
-      'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY || ''),
+      'process.env': JSON.stringify({
+        NODE_ENV: mode,
+        API_KEY: env.VITE_GEMINI_API_KEY || env.API_KEY || '',
+        VITE_SUPABASE_URL: env.VITE_SUPABASE_URL || '',
+        VITE_SUPABASE_ANON_KEY: env.VITE_SUPABASE_ANON_KEY || '',
+      }),
+      'global': 'window',
     },
     build: {
       // Increases the warning limit to 1500kb (default is 500kb)

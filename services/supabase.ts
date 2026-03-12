@@ -31,10 +31,33 @@ if (!isSupabaseConfigured) {
   console.warn('Supabase não configurado. O App rodará em modo Demo/Offline. Crie um arquivo .env com VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
 }
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  }
-});
+let supabaseInstance: any;
+try {
+  supabaseInstance = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  });
+} catch (err) {
+  console.error("Failed to initialize Supabase client:", err);
+  // Create a mock client to prevent crashes in the rest of the app
+  supabaseInstance = {
+    auth: {
+      getSession: async () => ({ data: { session: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      signInWithPassword: async () => ({ data: {}, error: new Error("Supabase not initialized") }),
+      signUp: async () => ({ data: {}, error: new Error("Supabase not initialized") }),
+      signOut: async () => ({ error: null }),
+    },
+    from: () => ({
+      select: () => ({ order: () => ({ data: [], error: null }) }),
+      insert: () => ({ select: () => ({ single: () => ({ data: null, error: new Error("Supabase not initialized") }) }) }),
+      update: () => ({ eq: () => ({ data: null, error: new Error("Supabase not initialized") }) }),
+      delete: () => ({ eq: () => ({ data: null, error: new Error("Supabase not initialized") }) }),
+    })
+  };
+}
+
+export const supabase = supabaseInstance;
