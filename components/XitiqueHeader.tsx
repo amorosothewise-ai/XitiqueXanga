@@ -42,31 +42,31 @@ const XitiqueHeader: React.FC<Props> = ({
   const progressPercentage = (xitique.participants.filter(p => p.received).length / xitique.participants.length) * 100;
 
   return (
-    <div className={`bg-slate-900 text-white rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden transition-all ${isEditMode ? 'ring-4 ring-emerald-500/30 scale-[1.01]' : ''}`}>
+    <div className={`bg-slate-900 text-white rounded-3xl p-5 md:p-8 shadow-xl relative overflow-hidden transition-all ${isEditMode ? 'ring-4 ring-emerald-500/30 scale-[1.01]' : ''}`}>
       <div className="absolute right-0 top-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
       <div className="relative z-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           {isEditMode ? (
             <div className="flex-1">
-              <label className="text-xs text-slate-400 font-bold uppercase block mb-1">{t('detail.group_name') || 'Nome do Grupo'}</label>
+              <label className="text-[10px] text-slate-400 font-bold uppercase block mb-1">{t('detail.group_name') || 'Nome do Grupo'}</label>
               <input 
                 type="text" 
                 value={tempName}
                 onChange={(e) => onNameChange(e.target.value)}
-                className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-2xl md:text-3xl font-bold text-white w-full focus:ring-2 focus:ring-emerald-500 outline-none"
+                className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-xl md:text-3xl font-bold text-white w-full focus:ring-2 focus:ring-emerald-500 outline-none"
               />
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <h1 className="text-2xl md:text-4xl font-bold tracking-tight flex items-center gap-3">
+              <h1 className="text-xl md:text-4xl font-bold tracking-tight flex items-center gap-3">
                 {xitique.name}
               </h1>
               <div className="flex items-center gap-2">
-                <span className={`${currentBadge.color} ${currentBadge.textColor} text-[10px] md:text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-sm ring-1 ring-white/10`}>
+                <span className={`${currentBadge.color} ${currentBadge.textColor} text-[9px] md:text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-sm ring-1 ring-white/10`}>
                   {currentBadge.icon} {currentBadge.text}
                 </span>
-                <span className="bg-white/10 backdrop-blur text-slate-300 border border-white/10 text-[10px] md:text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">
+                <span className="bg-white/10 backdrop-blur text-slate-300 border border-white/10 text-[9px] md:text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">
                   {xitique.frequency === 'WEEKLY' ? t('wiz.weekly') : xitique.frequency === 'MONTHLY' ? t('wiz.monthly') : t('wiz.daily')}
                 </span>
               </div>
@@ -75,27 +75,27 @@ const XitiqueHeader: React.FC<Props> = ({
         </div>
 
         {!isEditMode && (
-          <div className="mb-8">
-            <div className="flex justify-between text-xs font-medium text-slate-400 mb-2">
+          <div className="mb-6 md:mb-8">
+            <div className="flex justify-between text-[10px] md:text-xs font-medium text-slate-400 mb-2">
               <span>{t('detail.cycle_progress') || 'Progresso do Ciclo'}</span>
               <span>{Math.round(progressPercentage)}%</span>
             </div>
-            <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
+            <div className="w-full bg-slate-800 rounded-full h-2.5 md:h-3 overflow-hidden">
               <div 
-                className={`h-3 rounded-full transition-all duration-1000 ease-out ${xitique.status === XitiqueStatus.COMPLETED ? 'bg-indigo-500' : 'bg-gradient-to-r from-emerald-500 to-cyan-500'}`}
+                className={`h-full rounded-full transition-all duration-1000 ease-out ${xitique.status === XitiqueStatus.COMPLETED ? 'bg-indigo-500' : 'bg-gradient-to-r from-emerald-500 to-cyan-500'}`}
                 style={{ width: `${progressPercentage}%` }}
               ></div>
             </div>
           </div>
         )}
 
-        <div className="flex flex-wrap gap-4">
-          <div className={`flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10 relative ${isEditMode ? 'bg-slate-800 border-slate-600' : ''}`}>
-            <div className="bg-emerald-400/20 p-2 rounded-lg">
-              <DollarSign size={20} className="text-emerald-400" />
+        <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 md:gap-4">
+          <div className={`flex items-center gap-2 md:gap-3 bg-white/10 backdrop-blur-md px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-white/10 relative ${isEditMode ? 'bg-slate-800 border-slate-600' : ''}`}>
+            <div className="bg-emerald-400/20 p-1.5 md:p-2 rounded-lg shrink-0">
+              <DollarSign size={16} className="text-emerald-400" />
             </div>
-            <div>
-              <div className="text-[10px] md:text-xs text-slate-300 uppercase font-semibold flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="text-[9px] md:text-xs text-slate-300 uppercase font-semibold truncate">
                 {t('detail.total_volume') || 'Volume Total'}
               </div>
               {isEditMode ? (
@@ -103,55 +103,54 @@ const XitiqueHeader: React.FC<Props> = ({
                   type="number"
                   value={tempAmount}
                   onChange={(e) => onAmountChange(Number(e.target.value))}
-                  className="bg-transparent border-b border-slate-500 w-24 text-lg md:text-xl font-bold text-white focus:outline-none focus:border-emerald-500"
+                  className="bg-transparent border-b border-slate-500 w-full text-sm md:text-xl font-bold text-white focus:outline-none focus:border-emerald-500"
                 />
               ) : (
-                <div className="text-lg md:text-xl font-bold">{formatCurrency(totalVolume)}</div>
+                <div className="text-sm md:text-xl font-bold truncate">{formatCurrency(totalVolume)}</div>
               )}
             </div>
           </div>
 
-          <div className={`flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10 ${isEditMode ? 'bg-slate-800 border-slate-600' : ''}`}>
-            <div className="bg-purple-400/20 p-2 rounded-lg">
-              <Calendar size={20} className="text-purple-400" />
+          <div className={`flex items-center gap-2 md:gap-3 bg-white/10 backdrop-blur-md px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-white/10 ${isEditMode ? 'bg-slate-800 border-slate-600' : ''}`}>
+            <div className="bg-purple-400/20 p-1.5 md:p-2 rounded-lg shrink-0">
+              <Calendar size={16} className="text-purple-400" />
             </div>
-            <div>
-              <div className="text-[10px] md:text-xs text-slate-300 uppercase font-semibold">{t('detail.start_date')}</div>
+            <div className="min-w-0">
+              <div className="text-[9px] md:text-xs text-slate-300 uppercase font-semibold truncate">{t('detail.start_date')}</div>
               {isEditMode ? (
                 <div className="flex flex-col">
                   <input 
                     type="date"
                     value={tempStartDate}
                     onChange={(e) => onStartDateChange(e.target.value)}
-                    className="bg-transparent text-white font-bold text-sm focus:outline-none w-32"
+                    className="bg-transparent text-white font-bold text-[10px] md:text-sm focus:outline-none w-full"
                   />
-                  <span className="text-[9px] text-emerald-400 mt-0.5">* {t('detail.date_hint') || 'Datas futuras serão ajustadas'}</span>
                 </div>
               ) : (
-                <div className="text-lg md:text-xl font-bold">{formatDate(xitique.startDate)}</div>
+                <div className="text-sm md:text-xl font-bold truncate">{formatDate(xitique.startDate)}</div>
               )}
             </div>
           </div>
 
           {xitique.inviteCode && (
-            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10">
-              <div className="bg-blue-400/20 p-2 rounded-lg">
-                <LogIn size={20} className="text-blue-400" />
+            <div className="flex items-center gap-2 md:gap-3 bg-white/10 backdrop-blur-md px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-white/10">
+              <div className="bg-blue-400/20 p-1.5 md:p-2 rounded-lg shrink-0">
+                <LogIn size={16} className="text-blue-400" />
               </div>
-              <div>
-                <div className="text-[10px] md:text-xs text-slate-300 uppercase font-semibold">Invite Code</div>
-                <div className="text-lg md:text-xl font-bold font-mono tracking-wider">{xitique.inviteCode}</div>
+              <div className="min-w-0">
+                <div className="text-[9px] md:text-xs text-slate-300 uppercase font-semibold truncate">Invite Code</div>
+                <div className="text-sm md:text-xl font-bold font-mono tracking-wider truncate">{xitique.inviteCode}</div>
               </div>
             </div>
           )}
 
-          <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-3 rounded-xl border border-white/10">
-            <div className="bg-blue-400/20 p-2 rounded-lg">
-              <Users size={20} className="text-blue-400" />
+          <div className="flex items-center gap-2 md:gap-3 bg-white/10 backdrop-blur-md px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-white/10">
+            <div className="bg-blue-400/20 p-1.5 md:p-2 rounded-lg shrink-0">
+              <Users size={16} className="text-blue-400" />
             </div>
-            <div>
-              <div className="text-[10px] md:text-xs text-slate-300 uppercase font-semibold">{t('detail.members')}</div>
-              <div className="text-lg md:text-xl font-bold">{xitique.participants.length}</div>
+            <div className="min-w-0">
+              <div className="text-[9px] md:text-xs text-slate-300 uppercase font-semibold truncate">{t('detail.members')}</div>
+              <div className="text-sm md:text-xl font-bold truncate">{xitique.participants.length}</div>
             </div>
           </div>
         </div>

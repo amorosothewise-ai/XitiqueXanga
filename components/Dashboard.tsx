@@ -114,29 +114,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutoria
       {/* Welcome & Summary Widget */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          {/* Welcome Card */}
-         <div className="lg:col-span-3 bg-white rounded-3xl p-8 shadow-sm border border-slate-200 relative overflow-hidden">
+         <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-3xl p-5 md:p-8 shadow-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden">
             <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">
+                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">
                         {user ? t('dash.greeting', `Olá, ${user.name.split(' ')[0]}`).replace('{name}', user.name.split(' ')[0]) : 'Olá!'}
                     </h1>
-                    <p className="text-slate-500 max-w-lg leading-relaxed">
+                    <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base max-w-lg leading-relaxed">
                         {t('dash.subtitle_welcome', 'Here is an overview of your financial circles and savings progress.')}
                     </p>
                 </div>
-                <div className="flex gap-3">
-                   <div className="bg-emerald-50 px-5 py-3 rounded-2xl border border-emerald-100 text-center">
-                       <div className="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-1">{t('dash.stat_circles', 'Active Circles')}</div>
-                       <div className="text-2xl font-bold text-emerald-600">{allActiveXitiques.length}</div>
+                <div className="flex gap-2 md:gap-3 w-full md:w-auto">
+                   <div className="flex-1 md:flex-none bg-emerald-50 dark:bg-emerald-900/20 px-4 md:px-5 py-3 rounded-2xl border border-emerald-100 dark:border-emerald-800/50 text-center">
+                       <div className="text-[10px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider mb-1">{t('dash.stat_circles', 'Active Circles')}</div>
+                       <div className="text-xl md:text-2xl font-bold text-emerald-600 dark:text-emerald-300">{allActiveXitiques.length}</div>
                    </div>
-                   <div className="bg-blue-50 px-5 py-3 rounded-2xl border border-blue-100 text-center">
-                       <div className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-1">{t('dash.stat_monthly', 'Monthly Est.')}</div>
-                       <div className="text-2xl font-bold text-blue-600">{formatCurrency(totalCommitment)}</div>
+                   <div className="flex-1 md:flex-none bg-blue-50 dark:bg-blue-900/20 px-4 md:px-5 py-3 rounded-2xl border border-blue-100 dark:border-blue-800/50 text-center">
+                       <div className="text-[10px] font-bold text-blue-800 dark:text-blue-400 uppercase tracking-wider mb-1">{t('dash.stat_monthly', 'Monthly Est.')}</div>
+                       <div className="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-300">{formatCurrency(totalCommitment)}</div>
                    </div>
                 </div>
             </div>
             {/* Background Deco */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-100/50 to-teal-100/50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-100/50 to-teal-100/50 dark:from-emerald-500/10 dark:to-teal-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
          </div>
       </div>
 

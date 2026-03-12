@@ -64,15 +64,15 @@ const ArchitectureInfo: React.FC = () => {
     <div className="space-y-8 animate-fade-in pb-12 max-w-4xl mx-auto">
       
       {/* Header */}
-      <div className="bg-slate-900 text-white p-8 rounded-3xl relative overflow-hidden shadow-xl">
+      <div className="bg-slate-900 text-white p-6 md:p-8 rounded-3xl relative overflow-hidden shadow-xl">
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-2">
             <div className="bg-white/10 p-2 rounded-lg">
                 <Database size={24} className="text-emerald-400" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">{t.title}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t.title}</h1>
           </div>
-          <p className="text-slate-300 text-lg max-w-2xl">
+          <p className="text-slate-300 text-sm md:text-lg max-w-2xl">
             {t.subtitle}
           </p>
         </div>

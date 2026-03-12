@@ -238,29 +238,29 @@ const AppTutorial: React.FC<Props> = ({ onComplete, onClose }) => {
       <motion.div 
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-white w-full max-w-2xl rounded-3xl md:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] md:max-h-[90vh]"
       >
         {/* Header */}
-        <div className="p-8 pb-4 flex justify-between items-start">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-slate-50 rounded-2xl">
-              {currentStep.icon}
+        <div className="p-4 md:p-8 pb-3 md:pb-4 flex justify-between items-start">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="p-1.5 md:p-3 bg-slate-50 rounded-xl md:rounded-2xl">
+              {React.cloneElement(currentStep.icon as React.ReactElement, { size: window.innerWidth < 768 ? 24 : 32 })}
             </div>
             <div>
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">{currentStep.title}</h2>
-              <p className="text-slate-500 font-medium text-sm">{currentStep.desc}</p>
+              <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">{currentStep.title}</h2>
+              <p className="text-slate-500 font-medium text-xs md:text-sm">{currentStep.desc}</p>
             </div>
           </div>
           <button 
             onClick={onClose}
             className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-all"
           >
-            <X size={24} />
+            <X size={20} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-8 pt-0">
+        <div className="flex-1 overflow-y-auto p-5 md:p-8 pt-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -275,8 +275,8 @@ const AppTutorial: React.FC<Props> = ({ onComplete, onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-8 pt-4 border-t border-slate-50 flex items-center justify-between">
-          <div className="flex gap-1.5">
+        <div className="p-5 md:p-8 pt-4 border-t border-slate-50 flex items-center justify-between">
+          <div className="hidden sm:flex gap-1.5">
             {steps.map((_, i) => (
               <div 
                 key={i} 
@@ -285,11 +285,11 @@ const AppTutorial: React.FC<Props> = ({ onComplete, onClose }) => {
             ))}
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-2 md:gap-3 w-full sm:w-auto justify-between sm:justify-end">
             {step > 0 && (
               <button 
                 onClick={() => setStep(step - 1)}
-                className="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-all flex items-center gap-2"
+                className="px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-all flex items-center gap-2 text-sm md:text-base"
               >
                 <ArrowLeft size={18} /> {t('tut.back')}
               </button>
@@ -299,14 +299,14 @@ const AppTutorial: React.FC<Props> = ({ onComplete, onClose }) => {
               <button 
                 onClick={() => setStep(step + 1)}
                 disabled={step === 1 && !simName}
-                className="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-slate-900 text-white px-6 md:px-8 py-2.5 md:py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base ml-auto sm:ml-0"
               >
                 {t('tut.next')} <ArrowRight size={18} />
               </button>
             ) : (
               <button 
                 onClick={onComplete}
-                className="bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-200"
+                className="bg-emerald-500 text-white px-6 md:px-8 py-2.5 md:py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-200 text-sm md:text-base ml-auto sm:ml-0"
               >
                 {t('tut.btn_finish')} <CheckCircle2 size={18} />
               </button>

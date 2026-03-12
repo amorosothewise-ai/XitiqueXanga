@@ -61,26 +61,26 @@ const ParticipantList: React.FC<Props> = ({
           </div>
           
           {!isEditMode && (
-            <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+            <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
               <button 
                 onClick={() => onSort('name')} 
-                className={`px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm border ${sortConfig.key === 'name' ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700'}`}
+                className={`px-3 md:px-4 py-2.5 md:py-3 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm border ${sortConfig.key === 'name' ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700'}`}
               >
-                <ArrowUpDown size={16} className={sortConfig.key === 'name' ? 'text-emerald-400' : 'text-slate-400'} /> 
+                <ArrowUpDown size={14} className={sortConfig.key === 'name' ? 'text-emerald-400' : 'text-slate-400'} /> 
                 {t('detail.sort_name')}
               </button>
               <button 
                 onClick={() => onSort('payoutDate')} 
-                className={`px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm border ${sortConfig.key === 'payoutDate' ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700'}`}
+                className={`px-3 md:px-4 py-2.5 md:py-3 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm border ${sortConfig.key === 'payoutDate' ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700'}`}
               >
-                <Calendar size={16} className={sortConfig.key === 'payoutDate' ? 'text-emerald-400' : 'text-slate-400'} /> 
+                <Calendar size={14} className={sortConfig.key === 'payoutDate' ? 'text-emerald-400' : 'text-slate-400'} /> 
                 {t('detail.sort_date')}
               </button>
               <button 
                 onClick={() => onSort('received')} 
-                className={`px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm border ${sortConfig.key === 'received' ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700'}`}
+                className={`px-3 md:px-4 py-2.5 md:py-3 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap shadow-sm border ${sortConfig.key === 'received' ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-700'}`}
               >
-                <CheckSquare size={16} className={sortConfig.key === 'received' ? 'text-emerald-400' : 'text-slate-400'} /> 
+                <CheckSquare size={14} className={sortConfig.key === 'received' ? 'text-emerald-400' : 'text-slate-400'} /> 
                 {t('detail.sort_status')}
               </button>
             </div>
