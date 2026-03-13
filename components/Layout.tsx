@@ -231,8 +231,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
         
         {/* User Footer */}
         <div className="p-4 border-t border-slate-800 bg-slate-900/50 backdrop-blur-sm">
-            <div className="flex items-center gap-3 mb-3 p-2 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer" onClick={() => onChangeView('user')}>
-                <div className={`w-9 h-9 rounded-full ${user?.avatarColor || 'bg-gradient-to-br from-indigo-500 to-purple-600'} flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-slate-800 overflow-hidden`}>
+            <div className="flex items-center gap-3 mb-4 p-2 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer" onClick={() => onChangeView('user')}>
+                <div className={`w-10 h-10 rounded-full ${user?.avatarColor || 'bg-gradient-to-br from-indigo-500 to-purple-600'} flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-slate-800 overflow-hidden`}>
                     {user?.photoUrl ? (
                       <img src={user.photoUrl} className="w-full h-full object-cover" alt="Avatar" />
                     ) : (
@@ -241,7 +241,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="text-sm font-bold text-white truncate">{user?.name || 'Guest User'}</div>
-                    <div className="text-xs text-slate-500 truncate">{language === 'pt' ? 'Conta Grátis' : 'Free Account'}</div>
+                    <div className="text-xs text-slate-500 truncate">Profile Settings</div>
                 </div>
                 <ChevronRight size={16} className="text-slate-600" />
             </div>
@@ -255,14 +255,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
                     {isDark ? <Sun size={16} className="text-yellow-400" /> : <Moon size={16} />}
                 </button>
                  <button 
-                    onClick={() => setShowNotif(!showNotif)}
-                    className="flex-1 bg-slate-800 hover:bg-slate-700 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors relative"
-                    title={t('nav.notifications')}
-                >
-                    <Bell size={16} />
-                    {unreadCount > 0 && <span className="absolute top-2 right-3 w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span>}
-                </button>
-                <button 
                     onClick={toggleLanguage}
                     className="flex-1 bg-slate-800 hover:bg-slate-700 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors text-xs font-bold"
                 >

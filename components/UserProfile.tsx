@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Save, Globe, Mail, Bell, Shield, Key, Clock, LogOut, Loader2, Camera, FileText, AlertCircle } from 'lucide-react';
+import { User, Save, Globe, Mail, Bell, Shield, Key, Clock, LogOut, Loader2, Camera, FileText, AlertCircle, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,6 +10,29 @@ import { UserProfile as UserProfileType, ActivityLog } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import ImageCropper from './ImageCropper';
 import ActivityLogViewer from './ActivityLogViewer';
+
+const CollapsibleSection: React.FC<{
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}> = ({ title, icon, children, defaultOpen = false }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  return (
+    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full p-8 flex items-center justify-between text-left"
+      >
+        <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+          {icon} {title}
+        </h2>
+        <ChevronDown className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      {isOpen && <div className="p-8 pt-0 border-t border-slate-100">{children}</div>}
+    </div>
+  );
+};
 
 const UserProfile: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
@@ -24,6 +47,7 @@ const UserProfile: React.FC = () => {
   // Security modals
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   
   // Password Change State
   const [currentPass, setCurrentPass] = useState('');
@@ -249,82 +273,76 @@ const UserProfile: React.FC = () => {
         </div>
 
         {/* Section 1: Personal Information */}
-        <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200 space-y-6">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-4">
-                <User className="text-emerald-500" /> {t('profile.personal_info')}
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-                        {t('profile.label_name')}
-                    </label>
-                    <input 
-                        type="text" 
-                        value={profile.name} 
-                        onChange={(e) => setProfile({...profile, name: e.target.value})}
-                        className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
-                    />
+        <CollapsibleSection title={t('profile.personal_info')} icon={<User className="text-emerald-500" />} defaultOpen={true}>
+            <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                            {t('profile.label_name')}
+                        </label>
+                        <input 
+                            type="text" 
+                            value={profile.name} 
+                            onChange={(e) => setProfile({...profile, name: e.target.value})}
+                            className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                             <Mail size={16} className="text-slate-400"/> {t('profile.label_email')}
+                        </label>
+                        <input 
+                            type="email" 
+                            value={profile.email || ''} 
+                            disabled
+                            className="w-full p-4 border border-slate-200 bg-slate-100 text-slate-500 rounded-xl cursor-not-allowed font-medium"
+                        />
+                    </div>
                 </div>
 
                 <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-                         <Mail size={16} className="text-slate-400"/> {t('profile.label_email')}
+                        <Globe size={16} /> {t('profile.label_lang')}
                     </label>
-                    <input 
-                        type="email" 
-                        value={profile.email || ''} 
-                        disabled
-                        className="w-full p-4 border border-slate-200 bg-slate-100 text-slate-500 rounded-xl cursor-not-allowed font-medium"
-                    />
+                    <div className="grid grid-cols-2 gap-3">
+                        <button 
+                            onClick={() => setProfile({...profile, language: 'pt'})}
+                            className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                                profile.language === 'pt' 
+                                ? 'bg-slate-900 text-white border-slate-900' 
+                                : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                            }`}
+                        >
+                            <span className="text-lg">🇲🇿</span> Português
+                        </button>
+                        <button 
+                            onClick={() => setProfile({...profile, language: 'en'})}
+                            className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                                profile.language === 'en' 
+                                ? 'bg-slate-900 text-white border-slate-900' 
+                                : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                            }`}
+                        >
+                            <span className="text-lg">🇺🇸</span> English
+                        </button>
+                    </div>
                 </div>
-            </div>
-
-            <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-                    <Globe size={16} /> {t('profile.label_lang')}
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                    <button 
-                        onClick={() => setProfile({...profile, language: 'pt'})}
-                        className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-                            profile.language === 'pt' 
-                            ? 'bg-slate-900 text-white border-slate-900' 
-                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-                        }`}
+                
+                <div className="flex justify-end pt-2">
+                     <button 
+                        onClick={handleSaveProfile}
+                        disabled={isSaving}
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white py-3 px-8 rounded-xl font-bold shadow-lg shadow-emerald-200 transition-all flex items-center gap-2 disabled:opacity-50"
                     >
-                        <span className="text-lg">🇲🇿</span> Português
-                    </button>
-                    <button 
-                        onClick={() => setProfile({...profile, language: 'en'})}
-                        className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-                            profile.language === 'en' 
-                            ? 'bg-slate-900 text-white border-slate-900' 
-                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-                        }`}
-                    >
-                        <span className="text-lg">🇺🇸</span> English
+                        {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} {t('profile.save')}
                     </button>
                 </div>
             </div>
-            
-            <div className="flex justify-end pt-2">
-                 <button 
-                    onClick={handleSaveProfile}
-                    disabled={isSaving}
-                    className="bg-emerald-500 hover:bg-emerald-600 text-white py-3 px-8 rounded-xl font-bold shadow-lg shadow-emerald-200 transition-all flex items-center gap-2 disabled:opacity-50"
-                >
-                    {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} {t('profile.save')}
-                </button>
-            </div>
-        </div>
+        </CollapsibleSection>
 
         {/* Section 2: Notifications */}
-        <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200 space-y-6">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-4">
-                <Bell className="text-blue-500" /> {t('profile.notifications')}
-            </h2>
-            
+        <CollapsibleSection title={t('profile.notifications')} icon={<Bell className="text-blue-500" />}>
             <div className="space-y-4">
                 <ToggleRow 
                     label={t('profile.notif_contrib')}
@@ -351,14 +369,10 @@ const UserProfile: React.FC = () => {
                     {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} {t('profile.save')}
                 </button>
             </div>
-        </div>
+        </CollapsibleSection>
 
         {/* Section 3: Security */}
-        <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200 space-y-6">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-4">
-                <Shield className="text-rose-500" /> {t('profile.security')}
-            </h2>
-            
+        <CollapsibleSection title={t('profile.security')} icon={<Shield className="text-rose-500" />}>
             <div className="flex flex-col md:flex-row items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
                 <div className="flex items-center gap-3 mb-4 md:mb-0">
                     <div className="bg-white p-2 rounded-full text-slate-400 shadow-sm"><Key size={20} /></div>
@@ -371,16 +385,25 @@ const UserProfile: React.FC = () => {
                     {t('profile.change_pass')}
                 </button>
             </div>
-        </div>
+        </CollapsibleSection>
 
         {/* Section 4: Audit Logs */}
-        <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200 space-y-6">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-4">
-                <FileText className="text-slate-500" /> {t('profile.audit_log')}
-            </h2>
-            
+        <CollapsibleSection title={t('profile.audit_log')} icon={<FileText className="text-slate-500" />}>
             <ActivityLogViewer logs={logs} />
-        </div>
+        </CollapsibleSection>
+
+        {/* Section 5: Danger Zone */}
+        <CollapsibleSection title="Danger Zone" icon={<AlertCircle className="text-rose-500" />}>
+            <div className="space-y-4">
+                <p className="text-sm text-rose-700">Once you delete your account, there is no going back. Please be certain. All your data will be permanently removed.</p>
+                <button
+                    onClick={() => setDeleteModalOpen(true)}
+                    className="bg-rose-600 hover:bg-rose-700 text-white py-3 px-8 rounded-xl font-bold shadow-lg transition-all"
+                >
+                    Delete Account
+                </button>
+            </div>
+        </CollapsibleSection>
 
         {/* Password Modal */}
         {passwordModalOpen && (
@@ -422,6 +445,20 @@ const UserProfile: React.FC = () => {
             description="You will need to sign in again to access your financial circles."
             type="danger"
             confirmText="Log Out"
+        />
+
+        {/* Delete Account Modal */}
+        <ConfirmationModal 
+            isOpen={deleteModalOpen}
+            onClose={() => setDeleteModalOpen(false)}
+            onConfirm={() => {
+                addToast("Account deletion is not currently available. Please contact support.", "info");
+                setDeleteModalOpen(false);
+            }}
+            title="Delete Account?"
+            description="Are you sure you want to delete your account? This action is permanent and cannot be undone. All your data will be lost."
+            type="danger"
+            confirmText="Delete Account"
         />
     </div>
   );
