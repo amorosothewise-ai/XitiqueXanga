@@ -17,6 +17,7 @@ const AuthScreen: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   
   const [showResend, setShowResend] = useState(false);
 
@@ -24,6 +25,12 @@ const AuthScreen: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setShowResend(false);
+
+    if (!isLogin && password !== confirmPassword) {
+      addToast('Passwords do not match.', 'error');
+      setLoading(false);
+      return;
+    }
 
     try {
       if (isLogin) {
@@ -35,7 +42,9 @@ const AuthScreen: React.FC = () => {
       }
     } catch (err: any) {
       console.error(err);
-      if (err.message === 'CONFIRMATION_REQUIRED') {
+      if (err.code === 'auth/too-many-requests') {
+         addToast('Too many attempts. Please try again later.', 'error');
+      } else if (err.message === 'CONFIRMATION_REQUIRED') {
          addToast('Success! Please check your email to verify your account.', 'info');
          setIsLogin(true);
       } else if (err.message === 'EMAIL_NOT_VERIFIED') {
@@ -199,6 +208,23 @@ const AuthScreen: React.FC = () => {
                 />
               </div>
             </div>
+
+            {!isLogin && (
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">{t('auth.confirm_password') || 'Confirm Password'}</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3.5 text-slate-400"><Lock size={20} /></span>
+                  <input 
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
+                    placeholder="••••••••"
+                    required={!isLogin}
+                  />
+                </div>
+              </div>
+            )}
 
             <button 
               type="submit" 
