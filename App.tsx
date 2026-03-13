@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
+import { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import Wizard from './components/Wizard';

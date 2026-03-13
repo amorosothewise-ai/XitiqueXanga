@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { LayoutDashboard, PlusCircle, Info, Settings, ChevronRight, Bell, X, Check, PiggyBank, ArrowLeft, Hexagon, TrendingUp, Moon, Sun, Globe, Sparkles } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';

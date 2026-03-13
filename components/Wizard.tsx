@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Frequency, Xitique, PaymentMethod, ContributionMode, XitiqueStatus } from '../types';
 import { createNewXitique, saveXitique } from '../services/storage';
 import { addPeriod, formatDate } from '../services/dateUtils';
