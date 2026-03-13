@@ -130,9 +130,11 @@ export const generateGoalPlan = async (promptText: string, language: string, use
 
   const ai = new GoogleGenAI({ apiKey });
   
+  const currentDate = new Date().toLocaleDateString(language === 'pt' ? 'pt-MZ' : 'en-US', { month: 'long', year: 'numeric' });
+
   const systemInstruction = language === 'pt' 
-    ? "Você é um consultor financeiro especialista em Xitique. Calcule um plano realista. Retorne APENAS JSON."
-    : "You are a financial advisor expert in Xitique. Calculate a realistic plan. Return ONLY JSON.";
+    ? `Você é um consultor financeiro especialista em poupança e Xitique. A data atual é ${currentDate}. Se o usuário não fornecer valores exatos de despesas, faça estimativas realistas (ex: sugerir guardar 10% a 30% da renda). Calcule um plano realista para alcançar o objetivo. No campo 'idealMonth', calcule o mês e ano exatos em que a meta será atingida com base na data atual e no número de meses necessários. Retorne APENAS JSON com as chaves: targetAmount (numero), contribution (numero), frequency (string, ex: 'mensal'), idealMonth (string, ex: 'Dezembro 2026'), explanation (string com o racional do cálculo, meses necessários e dicas).`
+    : `You are a financial advisor expert in savings and Xitique. The current date is ${currentDate}. If the user doesn't provide exact expenses, make realistic estimates (e.g. suggest saving 10% to 30% of income). Calculate a realistic plan to reach the goal. For 'idealMonth', calculate the exact month and year the goal will be reached based on the current date and required months. Return ONLY JSON with keys: targetAmount (number), contribution (number), frequency (string, e.g. 'monthly'), idealMonth (string, e.g. 'December 2026'), explanation (string with calculation rationale, months needed, and tips).`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',

@@ -91,6 +91,10 @@ export const translations = {
     "dash.no_archived": "Nenhum grupo no histórico.",
     "dash.page": "Página",
     "dash.of": "de",
+    "dash.loading": "Carregando seus círculos...",
+    "dash.error_title": "Erro de Conexão",
+    "dash.error_desc": "Não foi possível carregar seus dados no momento. Fique tranquilo, seus registros estão seguros.",
+    "dash.try_again": "Tentar Novamente",
 
     // Individual / Stick
     "ind.title": "Xitique Pessoal",
@@ -111,8 +115,8 @@ export const translations = {
     "ind.monthly": "Mensalmente",
     "ind.balance": "Saldo Disponível",
     "ind.goal": "Meta",
-    "ind.deposit": "Depositar",
-    "ind.withdraw": "Levantar",
+    "ind.deposit": "Registar Contribuição",
+    "ind.withdraw": "Registar Recebimento",
     "ind.estimate": "Duração estimada:",
     "ind.days": "dias",
     "ind.weeks": "semanas",
@@ -280,25 +284,25 @@ export const translations = {
     "planner.error": "Não foi possível gerar o plano. Tente ser mais específico com valores e datas.",
 
     // Scenarios
-    "scen.title": "3. Real World Scenarios",
-    "scen.missed_title": "The Missing Contribution",
-    "scen.missed_risk": "Risk: Incomplete pot or member paying less than others.",
-    "scen.missed_logic": "The system does not assume automatic payment. The Admin must manually mark 'Paid'. If a mistake occurs, we use 'Reversal Transaction' to correct the balance without erasing history.",
-    "scen.early_title": "The Early Withdrawal",
-    "scen.early_risk": "Risk: Breaking compound interest effect and delaying the goal.",
-    "scen.early_logic": "When you withdraw, the system instantly recalculates the Projected Date based on the new balance. The app clearly shows the impact in delayed days/months.",
-    "scen.change_title": "Manual Rotation Change",
-    "scen.change_risk": "Risk: Mathematical and social unfairness.",
-    "scen.change_logic": "Once a Xitique is 'Active', the order is locked. The system prevents accidental changes. To change, it is recommended to Archive the current group and start a new one to preserve past data integrity.",
-
+    "scen.title": "3. Cenários do Mundo Real",
+    "scen.missed_title": "A Contribuição em Falta",
+    "scen.missed_risk": "Risco: Pote incompleto para o membro que deve receber.",
+    "scen.missed_logic": "O sistema não assume pagamento automático. O Admin deve marcar manualmente como 'Pago'. Se houver erro, use a 'Reversão' para corrigir o controle.",
+    "scen.early_title": "A Natureza do Xitique",
+    "scen.early_risk": "Regra: Não há juros nem retiradas antecipadas.",
+    "scen.early_logic": "O Xitique é um controle de rotação. Se 5 pessoas dão 10.000 MT, o Pote de 50.000 MT vai para uma pessoa por mês, sucessivamente, até o fim do ciclo.",
+    "scen.change_title": "Mudança Manual de Rotação",
+    "scen.change_risk": "Risco: Injustiça na ordem de recebimento.",
+    "scen.change_logic": "Quando o Xitique está 'Ativo', a ordem é travada para garantir transparência. Para mudar, arquive o grupo atual e crie um novo.",
+    
     // Tips (Context Aware)
-    "tip.did_you_know": "Dica Financeira",
-    "tip.group_1": "Grupos de Xitique baseados em confiança social têm 95% menos taxas de incumprimento do que empréstimos bancários.",
-    "tip.group_2": "Receber por último força você a poupar. É como se o grupo escondesse o dinheiro de você até o final!",
-    "tip.ind_1": "Pequenos depósitos frequentes superam grandes depósitos raros. A consistência é a chave.",
-    "tip.ind_2": "Visualize o que você vai comprar com este dinheiro. Isso torna o sacrifício de hoje mais fácil.",
-    "tip.with_1": "Cuidado! Levantar agora reseta o seu 'juro composto' psicológico. Tem certeza?",
-    "tip.with_2": "Se não for uma emergência, tente esperar 48 horas antes de levantar.",
+    "tip.did_you_know": "Dica de Xitique",
+    "tip.group_1": "O Xitique é baseado em confiança. Ex: 5 pessoas contribuindo 10.000 MT geram um pote de 50.000 MT para cada um na sua vez.",
+    "tip.group_2": "O sistema serve para controlar a rotação e garantir que todos saibam de quem é a vez de receber o Pote.",
+    "tip.ind_1": "A consistência é a chave do Xitique. Registre suas contribuições no prazo para manter o grupo saudável.",
+    "tip.ind_2": "Visualize o que você vai comprar quando chegar a sua vez de receber o Pote total.",
+    "tip.with_1": "Lembre-se: No Xitique não há juros. Você recebe exatamente a soma das contribuições de todos os membros.",
+    "tip.with_2": "Marque os pagamentos no sistema assim que o dinheiro for entregue ao membro da vez.",
 
     // Modals & Safety
     "modal.delete_title": "Delete Group Permanently?",
@@ -353,7 +357,9 @@ export const translations = {
     "about.feature_ind_desc": "A sua poupança individual com a disciplina de um grupo. Defina metas para compras ou emergências e visualize o seu progresso com previsões matemáticas de conclusão.",
     "about.feature_ai_title": "Inteligência Artificial",
     "about.feature_ai_process": "Integrado com o cérebro do Gemini 3 Flash, oferecemos auditorias de justiça e planeamento de metas personalizado.",
-    "about.footer": "Xitique Xanga - Onde a tradição encontra a inovação. Gerido com integridade, movido por IA."
+    "about.footer": "Xitique Xanga - Onde a tradição encontra a inovação. Gerido com integridade, movido por IA.",
+    "about.author_quote": "“Acredito que o conhecimento, a tecnologia e a criatividade podem transformar os desafios do dia a dia em oportunidades de crescimento. Esta aplicação reflete essa visão.”",
+    "about.author_name": "— Jeremias Masiyi"
   },
   en: {
     // Layout
@@ -446,6 +452,10 @@ export const translations = {
     "dash.no_archived": "No groups in history.",
     "dash.page": "Page",
     "dash.of": "of",
+    "dash.loading": "Loading your circles...",
+    "dash.error_title": "Connection Error",
+    "dash.error_desc": "Could not load your data right now. Rest assured, your records are safe.",
+    "dash.try_again": "Try Again",
 
     // Individual / Stick
     "ind.title": "Personal Xitique",
@@ -466,8 +476,8 @@ export const translations = {
     "ind.monthly": "Monthly",
     "ind.balance": "Available Balance",
     "ind.goal": "Goal",
-    "ind.deposit": "Deposit",
-    "ind.withdraw": "Withdraw",
+    "ind.deposit": "Record Contribution",
+    "ind.withdraw": "Record Payout",
     "ind.estimate": "Estimated duration:",
     "ind.days": "days",
     "ind.weeks": "weeks",
@@ -639,21 +649,21 @@ export const translations = {
     "scen.missed_title": "The Missing Contribution",
     "scen.missed_risk": "Risk: Incomplete pot or member paying less than others.",
     "scen.missed_logic": "The system does not assume automatic payment. The Admin must manually mark 'Paid'. If a mistake occurs, we use 'Reversal Transaction' to correct the balance without erasing history.",
-    "scen.early_title": "The Early Withdrawal",
-    "scen.early_risk": "Risk: Breaking compound interest effect and delaying the goal.",
-    "scen.early_logic": "When you withdraw, the system instantly recalculates the Projected Date based on the new balance. The app clearly shows the impact in delayed days/months.",
+    "scen.early_title": "The Nature of Xitique",
+    "scen.early_risk": "Rule: No interest or early withdrawals.",
+    "scen.early_logic": "Xitique is a rotation tracker. If 5 people give 10,000 MT, the 50,000 MT Pot goes to one person per month, successively, until the cycle ends.",
     "scen.change_title": "Manual Rotation Change",
     "scen.change_risk": "Risk: Mathematical and social unfairness.",
     "scen.change_logic": "Once a Xitique is 'Active', the order is locked. The system prevents accidental changes. To change, it is recommended to Archive the current group and start a new one to preserve past data integrity.",
 
     // Tips (Context Aware)
-    "tip.did_you_know": "Financial Tip",
-    "tip.group_1": "Social trust-based Xitique groups have 95% less default rates than bank loans.",
-    "tip.group_2": "Receiving last forces you to save. It's like the group hides the money from you until the end!",
-    "tip.ind_1": "Small frequent deposits beat rare huge deposits. Consistency is key.",
-    "tip.ind_2": "Visualize what you will buy with this money. It makes today's sacrifice easier.",
-    "tip.with_1": "Caution! Withdrawing now resets your psychological 'compound interest'. Are you sure?",
-    "tip.with_2": "If it's not an emergency, try waiting 48 hours before withdrawing.",
+    "tip.did_you_know": "Xitique Tip",
+    "tip.group_1": "Xitique is based on trust. E.g., 5 people contributing 10,000 MT generate a 50,000 MT pot for each in their turn.",
+    "tip.group_2": "The system serves to control the rotation and ensure everyone knows whose turn it is to receive the Pot.",
+    "tip.ind_1": "Consistency is key in Xitique. Record your contributions on time to keep the group healthy.",
+    "tip.ind_2": "Visualize what you will buy when it's your turn to receive the total Pot.",
+    "tip.with_1": "Remember: There is no interest in Xitique. You receive exactly the sum of all members' contributions.",
+    "tip.with_2": "Mark payments in the system as soon as the money is delivered to the member in turn.",
 
     // Modals & Safety
     "modal.delete_title": "Delete Group Permanently?",
@@ -708,6 +718,8 @@ export const translations = {
     "about.feature_ind_desc": "Disciplined individual savings. Set goals for purchases or emergencies and track your progress with smart completion forecasts.",
     "about.feature_ai_title": "Artificial Intelligence",
     "about.feature_ai_process": "Integrated with the Gemini 3 Flash brain, we offer fairness audits and personalized goal planning.",
-    "about.footer": "Xitique Xanga - Where tradition meets innovation. Managed with integrity, powered by AI."
+    "about.footer": "Xitique Xanga - Where tradition meets innovation. Managed with integrity, powered by AI.",
+    "about.author_quote": "“I believe knowledge, technology, and creativity can transform everyday challenges into opportunities for growth. This application reflects that vision.”",
+    "about.author_name": "— Jeremias Masiyi"
   }
 };

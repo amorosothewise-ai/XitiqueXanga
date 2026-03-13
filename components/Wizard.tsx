@@ -315,7 +315,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
       status: status 
     });
 
-    console.log("Saving Xitique:", newXitique);
+
 
     try {
         await saveXitique(newXitique);

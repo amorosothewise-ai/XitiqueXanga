@@ -4692,7 +4692,7 @@
     "author": "user",
     "payload": {
       "type": "text",
-      "text": "Enable email verification flow (no auto-login, block unverified users, show verification screen).\nImplement email verification using Firebase Authentication only.\n- When a user registers with email/password, do not sign them in automatically.\n- Send a verification email and show a verification screen with this message: “We have sent you a verification email to [user email]. Please verify it and log in.”\n- Include a Login button on the verification screen.\n- If a user logs in and their email is not verified, block access and show the same verification screen.\n- Do not use Firestore or any database — Firebase Authentication only.\n",
+      "text": "Enable email verification flow (no auto-login, block unverified users, show verification screen).\nImplement email verification using Firebase Authentication only.\n- When a user registers with email/password, do not sign them in automatically.\n- Send a verification email and show a verification screen with this message:“We have sent you a verification email to [user email]. Please verify it and log in.”\n- Include a Login button on the verification screen.\n- If a user logs in and their email is not verified, block access and show the same verification screen.\n- Do not use Firestore or any database — Firebase Authentication only.\n",
       "files": [],
       "fileUploads": [],
       "cMarkNode": {}

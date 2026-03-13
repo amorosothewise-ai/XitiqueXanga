@@ -86,6 +86,16 @@ const AboutTab: React.FC = () => {
         </div>
       </section>
 
+      {/* Author Quote */}
+      <section className="text-center space-y-4 py-8">
+        <blockquote className="text-2xl md:text-3xl font-medium text-slate-700 dark:text-slate-300 italic leading-relaxed max-w-3xl mx-auto">
+          {t('about.author_quote')}
+        </blockquote>
+        <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+          {t('about.author_name')}
+        </p>
+      </section>
+
       {/* Footer Note */}
       <footer className="text-center pt-8 border-t border-slate-100 dark:border-slate-800">
         <p className="text-sm font-medium text-slate-400 uppercase tracking-widest">

@@ -20,6 +20,7 @@ const ITEMS_PER_PAGE = 6;
 const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutorial }) => {
   const [xitiques, setXitiques] = useState<Xitique[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [joining, setJoining] = useState(false);
@@ -34,9 +35,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutoria
 
   const loadData = async () => {
     setLoadingData(true);
-    const data = await getXitiques();
-    setXitiques(data);
-    setLoadingData(false);
+    setFetchError(false);
+    try {
+      const data = await getXitiques();
+      setXitiques(data);
+    } catch (error) {
+      console.error("Failed to load Xitiques:", error);
+      setFetchError(true);
+    } finally {
+      setLoadingData(false);
+    }
   };
 
   useEffect(() => {
@@ -104,7 +112,27 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutoria
     return (
         <div className="flex flex-col items-center justify-center min-h-[400px]">
             <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
-            <p className="text-slate-400 font-medium">Loading your circles...</p>
+            <p className="text-slate-400 font-medium">{t('dash.loading', 'Carregando seus círculos...')}</p>
+        </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] animate-fade-in">
+            <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mb-6 text-rose-500">
+                <Activity size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">{t('dash.error_title', 'Erro de Conexão')}</h3>
+            <p className="text-slate-500 mb-8 max-w-sm mx-auto text-center">
+                {t('dash.error_desc', 'Não foi possível carregar seus dados no momento. Fique tranquilo, seus registros estão seguros.')}
+            </p>
+            <button 
+                onClick={loadData}
+                className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-3 rounded-xl font-bold shadow-xl shadow-slate-200 transition-all inline-flex items-center justify-center"
+            >
+                {t('dash.try_again', 'Tentar Novamente')}
+            </button>
         </div>
     );
   }

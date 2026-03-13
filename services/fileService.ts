@@ -8,8 +8,6 @@ export const uploadAvatar = async (userId: string, file: Blob): Promise<string> 
   const safeUserId = userId.replace(/[^a-zA-Z0-9-]/g, '');
   const fileName = `${safeUserId}_${timestamp}.jpg`;
 
-  console.log(`[Upload] Starting avatar upload: ${fileName}, Size: ${file.size} bytes`);
-
   // Upload to Supabase 'avatars' bucket
   const { data, error } = await supabase.storage
     .from('avatars')
@@ -37,8 +35,6 @@ export const uploadAvatar = async (userId: string, file: Blob): Promise<string> 
   if (!publicUrlData.publicUrl) {
       throw new Error("Could not generate public URL");
   }
-
-  console.log(`[Upload] Success. URL: ${publicUrlData.publicUrl}`);
 
   // Cache bust
   return `${publicUrlData.publicUrl}?t=${timestamp}`;

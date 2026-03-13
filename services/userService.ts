@@ -22,8 +22,6 @@ export const logActivity = async (
   const existing = getActivityLogs();
   const updated = [newLog, ...existing].slice(0, 50); // Keep last 50
   localStorage.setItem(ACTIVITY_LOG_KEY, JSON.stringify(updated));
-  
-  console.log(`[Activity] ${action} - ${status}`);
 };
 
 export const getActivityLogs = (): ActivityLog[] => {

@@ -42,7 +42,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Initialize Supabase Auth Listener
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      console.log('Supabase not configured. Skipping auth check.');
       setLoading(false);
       return;
     }

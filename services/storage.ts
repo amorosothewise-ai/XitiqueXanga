@@ -31,7 +31,6 @@ export const saveUserPrefs = (prefs: Partial<UserPrefs>) => {
 export const getXitiques = async (): Promise<Xitique[]> => {
   // Offline Strategy: If offline OR not configured, return cache immediately
   if (!navigator.onLine || !isSupabaseConfigured) {
-    console.log("Offline/Demo mode: Loading Xitiques from local cache.");
     const cached = localStorage.getItem(CACHE_XITIQUES_KEY);
     return cached ? JSON.parse(cached) : [];
   }
