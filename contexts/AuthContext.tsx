@@ -53,12 +53,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (error) throw error;
         
         if (session?.user) {
-          if (!session.user.email_confirmed_at) {
-              await supabase.auth.signOut();
-              setLoading(false);
-          } else {
-              mapAndSetUser(session.user);
-          }
+          mapAndSetUser(session.user);
         } else {
           setLoading(false);
         }
@@ -73,14 +68,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // 2. Listen for changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: any, session: any) => {
       if (session?.user) {
-        if (!session.user.email_confirmed_at) {
-            // If user logs in but isn't verified (e.g. via strict session restoration)
-            await supabase.auth.signOut();
-            setUser(null);
-            setLoading(false);
-        } else {
-            mapAndSetUser(session.user);
-        }
+        mapAndSetUser(session.user);
       } else {
         setUser(null);
         setLoading(false);
