@@ -132,7 +132,7 @@ const ParticipantItem: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto pl-14 md:pl-0">
+      <div className="flex items-center justify-between md:justify-end gap-2 md:gap-6 w-full md:w-auto pl-12 md:pl-0">
           <div className="text-right">
               <div className="text-[10px] text-slate-400 font-bold uppercase">{t('detail.receivable') || 'A Receber'}</div>
               <div className={`text-lg font-black ${participant.received ? 'text-slate-400' : 'text-slate-900 dark:text-white'}`}>

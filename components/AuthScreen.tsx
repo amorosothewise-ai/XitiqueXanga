@@ -45,7 +45,10 @@ const AuthScreen: React.FC = () => {
       if (err.code === 'auth/too-many-requests') {
          addToast('Too many attempts. Please try again later.', 'error');
       } else if (err.message === 'CONFIRMATION_REQUIRED') {
-         addToast('Success! Please check your email to verify your account.', 'info');
+         addToast(t('auth.confirm_email_msg'), 'info');
+         setIsLogin(true);
+      } else if (err.message === 'LOGIN_REQUIRED') {
+         addToast(t('auth.login_required_msg'), 'success');
          setIsLogin(true);
       } else if (err.message === 'EMAIL_NOT_VERIFIED') {
          addToast('Email not verified. Please check your inbox.', 'error');
@@ -171,7 +174,7 @@ const AuthScreen: React.FC = () => {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium text-slate-900"
                     placeholder={t('auth.name_placeholder')}
                     required={!isLogin}
                   />
@@ -187,7 +190,7 @@ const AuthScreen: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
+                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium text-slate-900"
                   placeholder="name@example.com"
                   required
                 />
@@ -202,7 +205,7 @@ const AuthScreen: React.FC = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
+                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium text-slate-900"
                   placeholder="••••••••"
                   required
                 />
@@ -211,14 +214,14 @@ const AuthScreen: React.FC = () => {
 
             {!isLogin && (
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">{t('auth.confirm_password') || 'Confirm Password'}</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">{t('auth.confirm_password')}</label>
                 <div className="relative">
                   <span className="absolute left-4 top-3.5 text-slate-400"><Lock size={20} /></span>
                   <input 
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium text-slate-900"
                     placeholder="••••••••"
                     required={!isLogin}
                   />

@@ -25,6 +25,7 @@ export const translations = {
     "auth.name_placeholder": "Ex: João Munguambe",
     "auth.email": "Endereço de Email",
     "auth.password": "Senha",
+    "auth.confirm_password": "Repita a sua senha",
     "auth.btn_login": "Entrar",
     "auth.btn_register": "Criar Conta",
     "auth.processing": "Processando...",
@@ -38,6 +39,8 @@ export const translations = {
     "auth.verify_title": "Verificação Necessária",
     "auth.verify_desc": "Verifique seu email antes de entrar.",
     "auth.resend": "Reenviar Email",
+    "auth.confirm_email_msg": "Sucesso! Por favor, abra seu aplicativo de e-mail e confirme sua conta.",
+    "auth.login_required_msg": "Registro realizado com sucesso! Por favor, faça login.",
     "auth.or": "OU",
 
     // Onboarding
@@ -386,6 +389,7 @@ export const translations = {
     "auth.name_placeholder": "Ex: John Doe",
     "auth.email": "Email Address",
     "auth.password": "Password",
+    "auth.confirm_password": "Confirm your password",
     "auth.btn_login": "Sign In",
     "auth.btn_register": "Create Account",
     "auth.processing": "Processing...",
@@ -399,6 +403,8 @@ export const translations = {
     "auth.verify_title": "Verification Required",
     "auth.verify_desc": "Verify your email before logging in.",
     "auth.resend": "Resend Email",
+    "auth.confirm_email_msg": "Success! Please open your email app and confirm your account.",
+    "auth.login_required_msg": "Registration successful! Please log in.",
     "auth.or": "OR",
 
     // Onboarding

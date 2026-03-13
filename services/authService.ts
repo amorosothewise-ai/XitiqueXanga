@@ -66,7 +66,17 @@ export const register = async (name: string, email: string, password: string): P
 
   if (error) throw error;
   
-  if (!data.user || !data.session) throw new Error('Registration failed');
+  if (!data.user) throw new Error('Registration failed');
+  
+  // If email confirmation is required
+  if (!data.user.email_confirmed_at) {
+     await supabase.auth.signOut();
+     throw new Error('CONFIRMATION_REQUIRED');
+  }
+  
+  if (!data.session) {
+      throw new Error('LOGIN_REQUIRED');
+  }
 
   return {
     user: mapUser(data.user),
