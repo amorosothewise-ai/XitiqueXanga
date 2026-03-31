@@ -43,7 +43,7 @@ export const getXitiques = async (): Promise<Xitique[]> => {
   const { data: participantLinks } = await supabase
     .from('participants')
     .select('xitique_id')
-    .eq('userId', user.user.id);
+    .eq('user_id', user.user.id);
   
   const participantXitiqueIds = (participantLinks || []).map((p: any) => p.xitique_id);
 
@@ -89,7 +89,7 @@ export const getXitiques = async (): Promise<Xitique[]> => {
     participants: (x.participants || []).map((p: any) => ({
       id: p.id,
       name: p.name,
-      userId: p.userId,
+      userId: p.user_id,
       received: p.received,
       order: p.order,
       payoutDate: p.payout_date,
@@ -154,11 +154,18 @@ export const saveXitique = async (xitique: Xitique): Promise<void> => {
 
   // 2. Upsert Participants
   if (xitique.participants.length > 0) {
+    const currentParticipantIds = xitique.participants.map(p => p.id);
+    await supabase
+      .from('participants')
+      .delete()
+      .eq('xitique_id', xitique.id)
+      .not('id', 'in', `(${currentParticipantIds.join(',')})`);
+
     const dbParticipants = xitique.participants.map(p => ({
       id: p.id,
       xitique_id: xitique.id,
       name: p.name,
-      userId: p.userId,
+      user_id: p.userId,
       payout_date: p.payoutDate,
       received: p.received,
       order: p.order,
@@ -166,10 +173,19 @@ export const saveXitique = async (xitique: Xitique): Promise<void> => {
     }));
     const { error: pError } = await supabase.from('participants').upsert(dbParticipants);
     if (pError) throw pError;
+  } else {
+    await supabase.from('participants').delete().eq('xitique_id', xitique.id);
   }
 
   // 3. Upsert Transactions
   if (xitique.transactions.length > 0) {
+    const currentTransactionIds = xitique.transactions.map(t => t.id);
+    await supabase
+      .from('transactions')
+      .delete()
+      .eq('xitique_id', xitique.id)
+      .not('id', 'in', `(${currentTransactionIds.join(',')})`);
+
     const dbTransactions = xitique.transactions.map(t => ({
       id: t.id,
       xitique_id: xitique.id,
@@ -181,6 +197,8 @@ export const saveXitique = async (xitique: Xitique): Promise<void> => {
     }));
     const { error: tError } = await supabase.from('transactions').upsert(dbTransactions);
     if (tError) throw tError;
+  } else {
+    await supabase.from('transactions').delete().eq('xitique_id', xitique.id);
   }
 };
 
@@ -246,18 +264,18 @@ export const joinXitique = async (inviteCode: string): Promise<void> => {
     .from('participants')
     .select('id')
     .eq('xitique_id', xitique.id)
-    .eq('userId', user.id)
+    .eq('user_id', user.id)
     .single();
 
   if (existing) throw new Error("You are already in this circle");
 
-  // 3. Find an empty slot (participant with no userId) or add a new one
+  // 3. Find an empty slot (participant with no user_id) or add a new one
   // For simplicity, we'll try to find a participant with the same name as the user or just an empty slot
   const { data: emptySlot } = await supabase
     .from('participants')
     .select('*')
     .eq('xitique_id', xitique.id)
-    .is('userId', null)
+    .is('user_id', null)
     .order('order', { ascending: true })
     .limit(1)
     .single();
@@ -266,7 +284,7 @@ export const joinXitique = async (inviteCode: string): Promise<void> => {
     // Claim the slot
     const { error: uError } = await supabase
       .from('participants')
-      .update({ userId: user.id, name: user.user_metadata.name || user.email })
+      .update({ user_id: user.id, name: user.user_metadata.name || user.email })
       .eq('id', emptySlot.id);
     if (uError) throw uError;
   } else {
@@ -286,7 +304,7 @@ export const joinXitique = async (inviteCode: string): Promise<void> => {
       .insert({
         id: crypto.randomUUID(),
         xitique_id: xitique.id,
-        userId: user.id,
+        user_id: user.id,
         name: user.user_metadata.name || user.email,
         order: nextOrder,
         received: false

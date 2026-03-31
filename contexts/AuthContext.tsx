@@ -56,7 +56,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } else {
           setLoading(false);
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err.message === 'Invalid Refresh Token: Refresh Token Not Found') {
+          await apiLogout();
+          setUser(null);
+        }
         console.error("Auth session check failed:", err);
         setLoading(false);
       }

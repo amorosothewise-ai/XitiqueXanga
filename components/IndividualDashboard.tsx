@@ -62,8 +62,8 @@ const IndividualDashboard: React.FC = () => {
   useEffect(() => {
     if (goalMode === 'manual') return;
 
-    const numAmount = Number(amount) || 0;
-    const numOccurrences = Number(occurrences) || 0;
+    const numAmount = isNaN(Number(amount)) ? 0 : Number(amount);
+    const numOccurrences = isNaN(Number(occurrences)) ? 0 : Number(occurrences);
 
     if (goalMode === 'count') {
         // Calculate Target and End Date based on Count
@@ -94,6 +94,10 @@ const IndividualDashboard: React.FC = () => {
                     setTargetAmount(count * numAmount);
                 }
             }
+        } else {
+            // Invalid date range
+            setOccurrences(0);
+            setTargetAmount(0);
         }
     }
   }, [amount, frequency, startDate, endDate, occurrences, goalMode]);
@@ -111,8 +115,8 @@ const IndividualDashboard: React.FC = () => {
         return;
     }
 
-    const finalTarget = Number(targetAmount) || 0;
-    const finalAmount = Number(amount) || 0;
+    const finalTarget = isNaN(Number(targetAmount)) ? 0 : Number(targetAmount);
+    const finalAmount = isNaN(Number(amount)) ? 0 : Number(amount);
 
     if (finalTarget <= 0) {
         addToast('Accumulated amount must be greater than 0', 'error');
@@ -122,6 +126,15 @@ const IndividualDashboard: React.FC = () => {
     if (finalAmount <= 0) {
         addToast('Contribution amount must be greater than 0', 'error');
         return;
+    }
+
+    if (goalMode === 'date') {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        if (start >= end) {
+            addToast('End date must be after start date', 'error');
+            return;
+        }
     }
 
     const newStick = createNewXitique({
