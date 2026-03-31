@@ -19,17 +19,17 @@ const CollapsibleSection: React.FC<{
 }> = ({ title, icon, children, defaultOpen = false }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   return (
-    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full p-8 flex items-center justify-between text-left"
       >
-        <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
           {icon} {title}
         </h2>
-        <ChevronDown className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`transition-transform duration-200 text-slate-500 dark:text-slate-400 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
-      {isOpen && <div className="p-8 pt-0 border-t border-slate-100">{children}</div>}
+      {isOpen && <div className="p-8 pt-0 border-t border-slate-100 dark:border-slate-800">{children}</div>}
     </div>
   );
 };
@@ -221,9 +221,9 @@ const UserProfile: React.FC = () => {
         />
 
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row items-center gap-6 bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+        <div className="flex flex-col md:flex-row items-center gap-6 bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800">
             <div className="relative group">
-                <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-bold overflow-hidden ${!profile.photoUrl || imageLoadError ? 'bg-emerald-500' : 'bg-slate-100'} shadow-lg relative`}>
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-bold overflow-hidden ${!profile.photoUrl || imageLoadError ? 'bg-emerald-500' : 'bg-slate-100 dark:bg-slate-800'} shadow-lg relative`}>
                     {isUploading ? (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
                             <Loader2 className="animate-spin text-white" />
@@ -243,7 +243,7 @@ const UserProfile: React.FC = () => {
                 </div>
                 <button 
                     onClick={() => !isUploading && fileInputRef.current?.click()}
-                    className="absolute -bottom-2 -right-2 bg-white p-2 rounded-full shadow border border-slate-100 cursor-pointer hover:bg-slate-50 text-slate-500 hover:text-emerald-600 transition-colors z-10"
+                    className="absolute -bottom-2 -right-2 bg-white dark:bg-slate-800 p-2 rounded-full shadow border border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors z-10"
                     title="Change Photo"
                 >
                     <Camera size={16} />
@@ -251,14 +251,14 @@ const UserProfile: React.FC = () => {
             </div>
             
             <div className="text-center md:text-left flex-1">
-                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{profile.name || t('profile.title')}</h1>
-                <p className="text-slate-500">{profile.email}</p>
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{profile.name || t('profile.title')}</h1>
+                <p className="text-slate-500 dark:text-slate-400">{profile.email}</p>
                 {imageLoadError && (
                     <div className="flex items-center justify-center md:justify-start gap-1 mt-1 text-amber-500 text-xs font-medium">
                         <AlertCircle size={12} /> Image load failed (Check Bucket Policy)
                     </div>
                 )}
-                <div className="flex items-center justify-center md:justify-start gap-2 mt-2 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                <div className="flex items-center justify-center md:justify-start gap-2 mt-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
                     <Clock size={12} />
                     {t('profile.last_login')} {new Date(profile.lastLogin || Date.now()).toLocaleDateString()}
                 </div>
@@ -266,7 +266,7 @@ const UserProfile: React.FC = () => {
 
             <button 
                 onClick={() => setLogoutModalOpen(true)}
-                className="bg-white hover:bg-slate-50 text-slate-700 px-4 py-3 rounded-xl border border-slate-200 font-bold shadow-sm transition-all flex items-center gap-2"
+                className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 font-bold shadow-sm transition-all flex items-center gap-2"
             >
                 <LogOut size={18} className="text-rose-500" /> Log Out
             </button>
@@ -277,32 +277,32 @@ const UserProfile: React.FC = () => {
             <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
                             {t('profile.label_name')}
                         </label>
                         <input 
                             type="text" 
                             value={profile.name} 
                             onChange={(e) => setProfile({...profile, name: e.target.value})}
-                            className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
+                            className="w-full p-4 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-                             <Mail size={16} className="text-slate-400"/> {t('profile.label_email')}
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                             <Mail size={16} className="text-slate-400 dark:text-slate-500"/> {t('profile.label_email')}
                         </label>
                         <input 
                             type="email" 
                             value={profile.email || ''} 
                             disabled
-                            className="w-full p-4 border border-slate-200 bg-slate-100 text-slate-500 rounded-xl cursor-not-allowed font-medium"
+                            className="w-full p-4 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 rounded-xl cursor-not-allowed font-medium"
                         />
                     </div>
                 </div>
 
                 <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
                         <Globe size={16} /> {t('profile.label_lang')}
                     </label>
                     <div className="grid grid-cols-2 gap-3">
@@ -310,8 +310,8 @@ const UserProfile: React.FC = () => {
                             onClick={() => setProfile({...profile, language: 'pt'})}
                             className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 ${
                                 profile.language === 'pt' 
-                                ? 'bg-slate-900 text-white border-slate-900' 
-                                : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                                ? 'bg-slate-900 dark:bg-slate-700 text-white border-slate-900 dark:border-slate-700' 
+                                : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                         >
                             <span className="text-lg">🇲🇿</span> Português
@@ -320,8 +320,8 @@ const UserProfile: React.FC = () => {
                             onClick={() => setProfile({...profile, language: 'en'})}
                             className={`py-3 px-4 rounded-xl border font-bold text-sm transition-all flex items-center justify-center gap-2 ${
                                 profile.language === 'en' 
-                                ? 'bg-slate-900 text-white border-slate-900' 
-                                : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                                ? 'bg-slate-900 dark:bg-slate-700 text-white border-slate-900 dark:border-slate-700' 
+                                : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                         >
                             <span className="text-lg">🇺🇸</span> English
@@ -373,14 +373,14 @@ const UserProfile: React.FC = () => {
 
         {/* Section 3: Security */}
         <CollapsibleSection title={t('profile.security')} icon={<Shield className="text-rose-500" />}>
-            <div className="flex flex-col md:flex-row items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="flex flex-col md:flex-row items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-3 mb-4 md:mb-0">
-                    <div className="bg-white p-2 rounded-full text-slate-400 shadow-sm"><Key size={20} /></div>
-                    <div className="text-sm font-bold text-slate-700">************</div>
+                    <div className="bg-white dark:bg-slate-800 p-2 rounded-full text-slate-400 shadow-sm"><Key size={20} /></div>
+                    <div className="text-sm font-bold text-slate-700 dark:text-slate-300">************</div>
                 </div>
                 <button 
                     onClick={() => setPasswordModalOpen(true)}
-                    className="text-sm font-bold text-rose-600 hover:bg-rose-50 px-4 py-2 rounded-lg transition-colors border border-rose-100 bg-white"
+                    className="text-sm font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 px-4 py-2 rounded-lg transition-colors border border-rose-100 dark:border-rose-900/50 bg-white dark:bg-slate-800"
                 >
                     {t('profile.change_pass')}
                 </button>
@@ -408,26 +408,26 @@ const UserProfile: React.FC = () => {
         {/* Password Modal */}
         {passwordModalOpen && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-in">
-                    <h3 className="text-lg font-bold mb-4">{t('profile.pass_modal_title')}</h3>
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-in border dark:border-slate-800">
+                    <h3 className="text-lg font-bold mb-4 dark:text-white">{t('profile.pass_modal_title')}</h3>
                     <div className="space-y-4 mb-6">
                         <input 
                             type="password" 
                             placeholder="Current Password" 
-                            className="w-full p-3 border rounded-xl"
+                            className="w-full p-3 border dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl"
                             value={currentPass}
                             onChange={(e) => setCurrentPass(e.target.value)}
                         />
                         <input 
                             type="password" 
                             placeholder="New Password" 
-                            className="w-full p-3 border rounded-xl"
+                            className="w-full p-3 border dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl"
                             value={newPass}
                             onChange={(e) => setNewPass(e.target.value)}
                         />
                     </div>
                     <div className="flex gap-2">
-                        <button onClick={() => setPasswordModalOpen(false)} className="flex-1 py-3 bg-slate-100 font-bold rounded-xl text-slate-600">Cancel</button>
+                        <button onClick={() => setPasswordModalOpen(false)} className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 font-bold rounded-xl text-slate-600 dark:text-slate-300">Cancel</button>
                         <button onClick={handleChangePassword} disabled={isSaving} className="flex-1 py-3 bg-rose-600 font-bold rounded-xl text-white">
                             {isSaving ? 'Updating...' : 'Change'}
                         </button>
@@ -466,11 +466,11 @@ const UserProfile: React.FC = () => {
 
 // Helper Component for Toggle Switches
 const ToggleRow: React.FC<{ label: string, isOn: boolean, onToggle: () => void }> = ({ label, isOn, onToggle }) => (
-    <div className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl transition-colors">
-        <span className="font-medium text-slate-700">{label}</span>
+    <div className="flex items-center justify-between p-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors">
+        <span className="font-medium text-slate-700 dark:text-slate-300">{label}</span>
         <button 
             onClick={onToggle}
-            className={`w-12 h-7 rounded-full transition-colors relative focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 ${isOn ? 'bg-emerald-500' : 'bg-slate-200'}`}
+            className={`w-12 h-7 rounded-full transition-colors relative focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 ${isOn ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`}
         >
             <div className={`w-5 h-5 bg-white rounded-full shadow-md absolute top-1 transition-transform transform ${isOn ? 'translate-x-6' : 'translate-x-1'}`} />
         </button>

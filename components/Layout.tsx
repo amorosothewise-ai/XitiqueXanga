@@ -273,7 +273,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
             <div className="relative -top-6">
                 <button 
                     onClick={() => onChangeView('create')}
-                    className="bg-gradient-to-r from-emerald-500 to-cyan-600 text-white p-4 rounded-full shadow-xl shadow-emerald-200 hover:scale-105 transition-transform"
+                    className="bg-gradient-to-r from-emerald-500 to-cyan-600 text-white p-4 rounded-full shadow-xl shadow-emerald-200 dark:shadow-emerald-900/20 hover:scale-105 transition-transform"
                 >
                     <PlusCircle size={28} />
                 </button>
@@ -339,7 +339,7 @@ const NavButton: React.FC<{active: boolean, onClick: () => void, icon: React.Rea
 );
 
 const MobileNavBtn: React.FC<{active: boolean, onClick: () => void, icon: React.ReactNode}> = ({ active, onClick, icon }) => (
-    <button onClick={onClick} className={`p-3 rounded-2xl transition-all ${active ? 'text-emerald-600 bg-emerald-50 scale-110 shadow-sm' : 'text-slate-400 dark:text-slate-500 active:scale-95'}`}>
+    <button onClick={onClick} className={`p-3 rounded-2xl transition-all ${active ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 scale-110 shadow-sm' : 'text-slate-400 dark:text-slate-500 active:scale-95'}`}>
         {icon}
     </button>
 );

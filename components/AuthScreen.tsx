@@ -54,7 +54,7 @@ const AuthScreen: React.FC = () => {
          addToast('Email not verified. Please check your inbox.', 'error');
          setShowResend(true);
       } else if (err.message.includes('Invalid login credentials')) {
-         addToast('Invalid email or password.', 'error');
+         addToast('E-mail ou senha incorretos. Tente novamente.', 'error');
       } else {
          addToast(err.message || 'Authentication failed. Please try again.', 'error');
       }
@@ -93,13 +93,13 @@ const AuthScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row font-sans bg-slate-50 relative">
+    <div className="min-h-screen flex flex-col md:flex-row font-sans bg-slate-50 dark:bg-slate-900 relative">
       
       {/* Language Toggle - Fixed to Top Right */}
       <div className="absolute top-4 right-4 z-50">
         <button
             onClick={toggleLanguage}
-            className="flex items-center gap-2 bg-white/80 backdrop-blur-md hover:bg-white text-slate-600 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm border border-slate-200"
+            className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm border border-slate-200 dark:border-slate-700"
         >
             <Globe size={14} className={language === 'pt' ? 'text-emerald-500' : 'text-blue-500'} />
             {language === 'pt' ? 'Português' : 'English'}
@@ -137,8 +137,8 @@ const AuthScreen: React.FC = () => {
       </div>
 
       {/* Right: Form */}
-      <div className="md:w-1/2 flex items-center justify-center p-6 bg-white md:bg-transparent">
-        <div className="w-full max-w-md space-y-8 bg-white md:p-10 rounded-3xl md:shadow-xl md:border border-slate-100">
+      <div className="md:w-1/2 flex items-center justify-center p-6 bg-white dark:bg-slate-900 md:bg-transparent md:dark:bg-transparent">
+        <div className="w-full max-w-md space-y-8 bg-white dark:bg-slate-800 md:p-10 rounded-3xl md:shadow-xl md:border border-slate-100 dark:border-slate-700">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-slate-900 mb-2">
               {isLogin ? t('auth.welcome') : t('auth.create')}
@@ -251,7 +251,7 @@ const AuthScreen: React.FC = () => {
           <button 
              onClick={handleGoogleLogin}
              disabled={loading}
-             className="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold py-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-3"
+             className="w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-bold py-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-3"
           >
              <Chrome size={20} className="text-emerald-500" />
              {t('auth.google')}

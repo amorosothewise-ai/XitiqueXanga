@@ -150,7 +150,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({ imageSrc, onCancel, onCrop 
 
   return (
     <div className="fixed inset-0 z-[100] bg-slate-900/95 flex flex-col items-center justify-center p-4 animate-fade-in touch-none">
-      <div className="bg-white rounded-3xl overflow-hidden shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]">
         <div className="p-4 border-b border-slate-100 flex justify-between items-center shrink-0">
             <h3 className="font-bold text-slate-900">Adjust Photo</h3>
             <button onClick={onCancel} className="p-2 hover:bg-slate-100 rounded-full text-slate-500">
@@ -180,7 +180,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({ imageSrc, onCancel, onCrop 
              </div>
         </div>
 
-        <div className="p-6 space-y-6 shrink-0 bg-white">
+        <div className="p-6 space-y-6 shrink-0 bg-white dark:bg-slate-900">
             <div className="flex items-center gap-4">
                 <ZoomOut size={20} className="text-slate-400" />
                 <input 

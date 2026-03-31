@@ -336,9 +336,9 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
     : orderedParticipants.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
   return (
-    <div className="bg-white rounded-3xl shadow-xl overflow-hidden max-w-4xl mx-auto border border-slate-200 font-sans pb-0 relative flex flex-col h-[calc(100vh-80px)] md:h-auto">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl overflow-hidden max-w-4xl mx-auto border border-slate-200 dark:border-slate-800 font-sans pb-0 relative flex flex-col h-[calc(100vh-80px)] md:h-auto">
       {/* Header */}
-      <div className={`${isRenewal ? 'bg-indigo-900' : 'bg-slate-900'} p-6 md:p-8 text-white flex justify-between items-center relative overflow-hidden transition-colors flex-shrink-0`}>
+      <div className={`${isRenewal ? 'bg-indigo-900 dark:bg-indigo-950' : 'bg-slate-900 dark:bg-slate-950'} p-6 md:p-8 text-white flex justify-between items-center relative overflow-hidden transition-colors flex-shrink-0`}>
         <div className="relative z-10">
           <div className="flex items-center gap-3">
               {isRenewal && <RefreshCw size={24} className="text-emerald-400" />}
@@ -362,49 +362,49 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto bg-slate-50/50 custom-scrollbar relative">
+      <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 custom-scrollbar relative">
         {/* Extra padding bottom to ensure last item clears the sticky footer on mobile */}
         <div className="p-4 md:p-10 pb-64 md:pb-10">
         
         {/* STEP 1: BASICS */}
         {step === 1 && (
           <div className="space-y-8 animate-fade-in">
-            <div className="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-                    <span className={`w-8 h-8 rounded-full ${isRenewal ? 'bg-indigo-900' : 'bg-slate-900'} text-white flex items-center justify-center text-sm`}>1</span>
+            <div className="bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                    <span className={`w-8 h-8 rounded-full ${isRenewal ? 'bg-indigo-900 dark:bg-indigo-800' : 'bg-slate-900 dark:bg-slate-700'} text-white flex items-center justify-center text-sm`}>1</span>
                     {t('wiz.step1')}
                 </h3>
                 
                 <div className="group mb-6">
-                    <label className="block text-sm font-bold text-slate-700 mb-2">{t('wiz.label_name')}</label>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">{t('wiz.label_name')}</label>
                     <input 
                         type="text" 
                         value={name} 
                         onChange={(e) => setName(e.target.value)}
                         placeholder={t('wiz.placeholder_name')}
-                        className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-base"
+                        className="w-full p-4 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-base"
                         autoFocus
                     />
                 </div>
 
                 {/* Contribution Mode Selection */}
                 <div className="mb-6">
-                    <label className="block text-sm font-bold text-slate-700 mb-2">{t('wiz.mode_title')}</label>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">{t('wiz.mode_title')}</label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div 
                             onClick={() => setContributionMode(ContributionMode.UNIFORM)}
                             className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 ${
                                 contributionMode === ContributionMode.UNIFORM 
-                                ? 'border-emerald-500 bg-emerald-50' 
-                                : 'border-slate-200 bg-white hover:border-slate-300'
+                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-500/50' 
+                                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600'
                             }`}
                         >
-                            <div className={`p-2 rounded-full ${contributionMode === ContributionMode.UNIFORM ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                            <div className={`p-2 rounded-full ${contributionMode === ContributionMode.UNIFORM ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'}`}>
                                 <Scale size={20} />
                             </div>
                             <div>
-                                <div className="font-bold text-slate-900">{t('wiz.mode_uniform')}</div>
-                                <div className="text-xs text-slate-500">{t('wiz.mode_uniform_desc')}</div>
+                                <div className="font-bold text-slate-900 dark:text-white">{t('wiz.mode_uniform')}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400">{t('wiz.mode_uniform_desc')}</div>
                             </div>
                         </div>
 
@@ -412,16 +412,16 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                             onClick={() => setContributionMode(ContributionMode.VARIABLE)}
                             className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 ${
                                 contributionMode === ContributionMode.VARIABLE 
-                                ? 'border-indigo-500 bg-indigo-50' 
-                                : 'border-slate-200 bg-white hover:border-slate-300'
+                                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-500/50' 
+                                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600'
                             }`}
                         >
-                            <div className={`p-2 rounded-full ${contributionMode === ContributionMode.VARIABLE ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                            <div className={`p-2 rounded-full ${contributionMode === ContributionMode.VARIABLE ? 'bg-indigo-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'}`}>
                                 <BarChart3 size={20} />
                             </div>
                             <div>
-                                <div className="font-bold text-slate-900">{t('wiz.mode_variable')}</div>
-                                <div className="text-xs text-slate-500">{t('wiz.mode_variable_desc')}</div>
+                                <div className="font-bold text-slate-900 dark:text-white">{t('wiz.mode_variable')}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400">{t('wiz.mode_variable_desc')}</div>
                             </div>
                         </div>
                     </div>
@@ -429,7 +429,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">{t('wiz.label_amount')}</label>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">{t('wiz.label_amount')}</label>
                     <div className="relative">
                     <span className="absolute left-4 top-4 text-slate-400 font-bold">{t('common.currency')}</span>
                     <input 
@@ -438,29 +438,29 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                         value={amount} 
                         onChange={(e) => setAmount(e.target.value)}
                         placeholder="0"
-                        className="w-full p-4 pl-12 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-mono text-lg"
+                        className="w-full p-4 pl-12 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-mono text-lg"
                     />
                     </div>
                 </div>
                 
                 <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">{t('wiz.label_freq')}</label>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">{t('wiz.label_freq')}</label>
                     <div className="grid grid-cols-3 gap-2">
                     <button 
                         onClick={() => setFrequency(Frequency.WEEKLY)}
-                        className={`py-4 px-2 rounded-xl text-xs font-bold transition-all border ${frequency === Frequency.WEEKLY ? 'bg-slate-900 text-emerald-400 border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'}`}
+                        className={`py-4 px-2 rounded-xl text-xs font-bold transition-all border ${frequency === Frequency.WEEKLY ? 'bg-slate-900 dark:bg-slate-700 text-emerald-400 border-slate-900 dark:border-slate-700' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500'}`}
                     >
                         {t('wiz.weekly')}
                     </button>
                     <button 
                         onClick={() => setFrequency(Frequency.MONTHLY)}
-                        className={`py-4 px-2 rounded-xl text-xs font-bold transition-all border ${frequency === Frequency.MONTHLY ? 'bg-slate-900 text-emerald-400 border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'}`}
+                        className={`py-4 px-2 rounded-xl text-xs font-bold transition-all border ${frequency === Frequency.MONTHLY ? 'bg-slate-900 dark:bg-slate-700 text-emerald-400 border-slate-900 dark:border-slate-700' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500'}`}
                     >
                         {t('wiz.monthly')}
                     </button>
                     <button 
                         onClick={() => setFrequency(Frequency.DAILY)}
-                        className={`py-4 px-2 rounded-xl text-xs font-bold transition-all border ${frequency === Frequency.DAILY ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'}`}
+                        className={`py-4 px-2 rounded-xl text-xs font-bold transition-all border ${frequency === Frequency.DAILY ? 'bg-amber-500 text-white border-amber-500' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500'}`}
                     >
                         {t('wiz.daily')}
                     </button>
@@ -469,7 +469,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                 </div>
 
                 <div className="mb-6">
-                   <label className="block text-sm font-bold text-slate-700 mb-2">{t('wiz.label_method')}</label>
+                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">{t('wiz.label_method')}</label>
                    <div className="grid grid-cols-3 gap-2">
                     {[
                         { id: PaymentMethod.MPESA, label: 'M-Pesa', icon: Smartphone },
@@ -481,8 +481,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                             onClick={() => setMethod(m.id)}
                             className={`py-3 px-2 rounded-xl text-xs font-bold border flex flex-col items-center gap-1 transition-all ${
                                 method === m.id
-                                ? 'bg-slate-900 text-white border-slate-900' 
-                                : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                                ? 'bg-slate-900 dark:bg-slate-700 text-white border-slate-900 dark:border-slate-700' 
+                                : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                             }`}
                         >
                             <m.icon size={16} />
@@ -493,12 +493,12 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                 </div>
 
                 <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">{t('wiz.label_start')}</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">{t('wiz.label_start')}</label>
                 <input 
                     type="date" 
                     value={startDate} 
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-base"
+                    className="w-full p-4 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-base"
                 />
                 </div>
             </div>
@@ -508,12 +508,12 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
         {/* STEP 2: PARTICIPANTS */}
         {step === 2 && (
           <div className="space-y-6 animate-fade-in">
-            <div className="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="text-xl font-bold text-slate-900 mb-2 flex items-center gap-2">
-                    <span className={`w-8 h-8 rounded-full ${isRenewal ? 'bg-indigo-900' : 'bg-slate-900'} text-white flex items-center justify-center text-sm`}>2</span>
+            <div className="bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                    <span className={`w-8 h-8 rounded-full ${isRenewal ? 'bg-indigo-900 dark:bg-indigo-800' : 'bg-slate-900 dark:bg-slate-700'} text-white flex items-center justify-center text-sm`}>2</span>
                     {t('wiz.step2')}
                 </h3>
-                <p className="text-sm text-slate-500 mb-6 ml-10">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 ml-10">
                     {t('wiz.add_member_desc')}
                 </p>
 
@@ -532,25 +532,25 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                     const projectedDate = addPeriod(startDate, frequency, idx);
                     return (
                     // KEY FIX: Using p.tempId instead of idx ensures React tracks inputs correctly and prevents cursor jumping
-                    <div key={p.tempId} className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 animate-fade-in bg-slate-50 md:bg-white p-4 md:p-0 rounded-xl border border-slate-200 md:border-0 shadow-sm md:shadow-none">
+                    <div key={p.tempId} className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 animate-fade-in bg-slate-50 dark:bg-slate-900 md:bg-white md:dark:bg-slate-800 p-4 md:p-0 rounded-xl border border-slate-200 dark:border-slate-700 md:border-0 shadow-sm md:shadow-none">
                         
                         {/* Header Row on Mobile Card */}
                         <div className="flex items-center justify-between md:hidden mb-2">
                              <div className="flex items-center gap-2">
-                                <span className="bg-white text-slate-400 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold border border-slate-200 shadow-sm">
+                                <span className="bg-white dark:bg-slate-800 text-slate-400 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold border border-slate-200 dark:border-slate-700 shadow-sm">
                                     {idx + 1}
                                 </span>
                                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Member {idx + 1}</span>
                              </div>
                              {participantsData.length > 2 && (
-                                <button onClick={() => handleRemoveParticipant(idx)} className="text-slate-300 hover:text-red-500 p-2 -mr-2">
+                                <button onClick={() => handleRemoveParticipant(idx)} className="text-slate-300 hover:text-red-500 dark:hover:text-red-400 p-2 -mr-2">
                                     <Trash2 size={18} />
                                 </button>
                              )}
                         </div>
 
                         {/* Desktop Index */}
-                        <span className="hidden md:flex bg-slate-100 text-slate-400 w-10 h-10 items-center justify-center rounded-xl text-sm font-bold border border-slate-200 flex-shrink-0">
+                        <span className="hidden md:flex bg-slate-100 dark:bg-slate-900 text-slate-400 w-10 h-10 items-center justify-center rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-700 flex-shrink-0">
                              {idx + 1}
                         </span>
 
@@ -561,13 +561,13 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                                 placeholder={t('wiz.placeholder_member')}
                                 value={p.name}
                                 onChange={(e) => handleNameChange(idx, e.target.value)}
-                                className="w-full p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-base font-medium"
+                                className="w-full p-4 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-base font-medium"
                                 autoComplete="off"
                             />
                              {/* Mobile Estimated Date */}
                             <div className="md:hidden text-xs text-slate-400 mt-1 flex items-center gap-1 pl-1">
                                 <Calendar size={10} /> 
-                                {t('wiz.est_date')}: <span className="text-slate-600 font-bold">{formatDate(projectedDate)}</span>
+                                {t('wiz.est_date')}: <span className="text-slate-600 dark:text-slate-300 font-bold">{formatDate(projectedDate)}</span>
                             </div>
                         </div>
                         
@@ -580,21 +580,21 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                                     inputMode="decimal"
                                     value={p.amount} 
                                     onChange={(e) => handleAmountChange(idx, e.target.value)}
-                                    className="w-full pl-6 p-4 border border-indigo-200 bg-indigo-50/50 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-indigo-900 text-base"
+                                    className="w-full pl-6 p-4 border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-indigo-900 dark:text-indigo-100 text-base"
                                     placeholder="0"
                                 />
                              </div>
                         )}
 
                         {/* Desktop Estimated Date */}
-                        <div className="hidden md:flex w-32 items-center text-sm font-semibold text-slate-500 bg-slate-50 px-3 py-3 rounded-xl border border-slate-100">
+                        <div className="hidden md:flex w-32 items-center text-sm font-semibold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 px-3 py-3 rounded-xl border border-slate-100 dark:border-slate-700">
                            <Calendar size={14} className="mr-2 text-slate-400" />
                            {formatDate(projectedDate)}
                         </div>
                         
                         {/* Desktop Delete Button */}
                         {participantsData.length > 2 && (
-                            <button onClick={() => handleRemoveParticipant(idx)} className="hidden md:block text-slate-300 hover:text-red-500 transition-colors p-2 flex-shrink-0">
+                            <button onClick={() => handleRemoveParticipant(idx)} className="hidden md:block text-slate-300 hover:text-red-500 dark:hover:text-red-400 transition-colors p-2 flex-shrink-0">
                                 <Trash2 size={20} />
                             </button>
                         )}
@@ -607,7 +607,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
 
                 <button 
                 onClick={handleAddParticipant}
-                className="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center text-slate-500 font-bold hover:border-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all mt-4 text-base"
+                className="w-full py-4 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all mt-4 text-base"
                 >
                 <UserPlus size={18} className="mr-2" /> {t('wiz.btn_add_member')}
                 </button>
@@ -620,16 +620,16 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
             <div className="space-y-6 animate-fade-in">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                            <span className={`w-8 h-8 rounded-full ${isRenewal ? 'bg-indigo-900' : 'bg-slate-900'} text-white flex items-center justify-center text-sm`}>3</span>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <span className={`w-8 h-8 rounded-full ${isRenewal ? 'bg-indigo-900 dark:bg-indigo-800' : 'bg-slate-900 dark:bg-slate-700'} text-white flex items-center justify-center text-sm`}>3</span>
                             {t('wiz.algo_title')}
                         </h3>
-                        <p className="text-sm text-slate-500 mt-1 ml-10">{t('wiz.algo_desc')}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 ml-10">{t('wiz.algo_desc')}</p>
                     </div>
                     
                     <button 
                       onClick={handleShuffle}
-                      className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold text-sm transition-colors border border-slate-200"
+                      className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-xl font-bold text-sm transition-colors border border-slate-200 dark:border-slate-700"
                       title="Shuffle non-locked members"
                     >
                        <Shuffle size={16} /> 
@@ -637,7 +637,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                     </button>
                 </div>
                 
-                <div className="space-y-3 bg-white p-3 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="space-y-3 bg-white dark:bg-slate-800 p-3 md:p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
                     {orderedParticipants.map((p, idx) => {
                         const calculatedDate = addPeriod(startDate, frequency, idx);
                         const isLast = idx === orderedParticipants.length - 1;
@@ -649,32 +649,32 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                                 key={idx} 
                                 className={`flex items-center gap-2 md:gap-4 border p-3 md:p-4 rounded-xl transition-all duration-300 group ${
                                     isLocked 
-                                        ? 'bg-rose-50 border-rose-200 shadow-md transform scale-[1.01]' 
-                                        : 'bg-white border-slate-100 hover:border-emerald-300 hover:shadow-md'
+                                        ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800/50 shadow-md transform scale-[1.01]' 
+                                        : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-500 hover:shadow-md'
                                 }`}
                             >
                                 {/* Drag Handle - Hidden on Mobile */}
-                                <div className={`hidden md:block cursor-grab ${isLocked ? 'text-rose-400 cursor-not-allowed opacity-50' : 'text-slate-300'}`}>
+                                <div className={`hidden md:block cursor-grab ${isLocked ? 'text-rose-400 dark:text-rose-500 cursor-not-allowed opacity-50' : 'text-slate-300 dark:text-slate-600'}`}>
                                     <GripVertical size={20} />
                                 </div>
                                 
                                 <div className="flex-1">
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                                         <div className="flex items-center gap-3">
-                                            <span className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isLocked ? 'bg-rose-200 text-rose-700' : 'bg-slate-100 text-slate-500'}`}>
+                                            <span className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isLocked ? 'bg-rose-200 dark:bg-rose-900/50 text-rose-700 dark:text-rose-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
                                                 {idx + 1}
                                             </span>
                                             <div className="min-w-0">
-                                                <span className={`font-bold text-base md:text-lg block truncate ${isLocked ? 'text-rose-700' : 'text-slate-800'}`}>
+                                                <span className={`font-bold text-base md:text-lg block truncate ${isLocked ? 'text-rose-700 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}`}>
                                                     {p.name}
                                                 </span>
                                                 {contributionMode === ContributionMode.VARIABLE && (
-                                                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                                                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded">
                                                         {formatCurrency(p.amount)}
                                                     </span>
                                                 )}
                                                 {/* Mobile Date display */}
-                                                <div className="md:hidden flex items-center text-xs font-semibold text-slate-500 mt-1 bg-slate-50 px-2 py-1 rounded inline-flex">
+                                                <div className="md:hidden flex items-center text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded inline-flex">
                                                     <Calendar size={10} className="mr-1" />
                                                     {formatDate(calculatedDate)}
                                                 </div>
@@ -682,7 +682,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                                         </div>
                                         
                                         {/* Desktop Date Display */}
-                                        <div className={`hidden md:flex items-center text-sm font-semibold px-3 py-1.5 rounded-lg ${isLocked ? 'bg-rose-200 text-rose-800' : 'bg-emerald-50 text-emerald-700'}`}>
+                                        <div className={`hidden md:flex items-center text-sm font-semibold px-3 py-1.5 rounded-lg ${isLocked ? 'bg-rose-200 dark:bg-rose-900/50 text-rose-800 dark:text-rose-300' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'}`}>
                                             <span className="text-xs font-normal opacity-70 mr-1">Receives:</span>
                                             <Calendar size={14} className="mr-1" />
                                             {formatDate(calculatedDate)}
@@ -697,8 +697,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                                         onClick={() => toggleLock(idx)}
                                         className={`p-2 md:p-2 rounded-lg transition-colors flex-shrink-0 ${
                                             isLocked 
-                                            ? 'bg-rose-100 text-rose-600 hover:bg-rose-200' 
-                                            : 'bg-slate-50 text-slate-300 hover:bg-slate-100 hover:text-slate-500'
+                                            ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 hover:bg-rose-200 dark:hover:bg-rose-900' 
+                                            : 'bg-slate-50 dark:bg-slate-800 text-slate-300 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-500 dark:hover:text-slate-300'
                                         }`}
                                         title={isLocked ? t('wiz.unlock') : t('wiz.lock')}
                                     >
@@ -711,14 +711,14 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                                         <button 
                                             onClick={() => moveParticipant(idx, 'up')}
                                             disabled={isFirst || isLocked}
-                                            className={`p-1.5 rounded-lg hover:bg-slate-100 flex-shrink-0 ${isFirst ? 'text-slate-100' : 'text-slate-400 hover:text-emerald-600 bg-slate-50 border border-slate-100'}`}
+                                            className={`p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex-shrink-0 ${isFirst ? 'text-slate-100 dark:text-slate-800' : 'text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700'}`}
                                         >
                                             <ArrowUp size={16} />
                                         </button>
                                         <button 
                                             onClick={() => moveParticipant(idx, 'down')}
                                             disabled={isLast || isLocked}
-                                            className={`p-1.5 rounded-lg hover:bg-slate-100 flex-shrink-0 ${isLast ? 'text-slate-100' : 'text-slate-400 hover:text-emerald-600 bg-slate-50 border border-slate-100'}`}
+                                            className={`p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex-shrink-0 ${isLast ? 'text-slate-100 dark:text-slate-800' : 'text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700'}`}
                                         >
                                             <ArrowDown size={16} />
                                         </button>
@@ -734,30 +734,30 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
         {/* STEP 4: REVIEW */}
         {step === 4 && (
           <div className="animate-fade-in text-center py-8">
-            <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-100/50">
+            <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-100/50 dark:shadow-none">
               <Check size={48} strokeWidth={3} />
             </div>
-            <h3 className="text-3xl font-bold text-slate-900 mb-3">{t('wiz.system_ready')}</h3>
-            <p className="text-slate-500 mb-8 max-w-md mx-auto leading-relaxed">
+            <h3 className="text-3xl font-bold text-slate-900 dark:text-white mb-3">{t('wiz.system_ready')}</h3>
+            <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto leading-relaxed">
               {t('wiz.ready_desc')}
               <br />
-              <span className="text-slate-400 text-sm">{t('wiz.total_pot')}</span> <strong className="text-emerald-600 text-2xl">{t('common.currency')} {formatCurrency(estimatedPot).replace(' MT', '')}</strong>
+              <span className="text-slate-400 dark:text-slate-500 text-sm">{t('wiz.total_pot')}</span> <strong className="text-emerald-600 dark:text-emerald-400 text-2xl">{t('common.currency')} {formatCurrency(estimatedPot).replace(' MT', '')}</strong>
             </p>
             
-            <div className="bg-white border border-slate-200 p-8 rounded-2xl text-left shadow-sm max-w-lg mx-auto">
-               <h4 className="font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">{t('wiz.summary')}</h4>
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 rounded-2xl text-left shadow-sm max-w-lg mx-auto">
+               <h4 className="font-bold text-slate-900 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-700 pb-2">{t('wiz.summary')}</h4>
                <ul className="space-y-4 text-sm">
                  <li className="flex justify-between items-center">
-                    <span className="text-slate-500">{t('wiz.first_payout')}</span>
-                    <span className="font-bold text-slate-900 bg-slate-50 px-2 py-1 rounded">{orderedParticipants[0]?.name}</span>
+                    <span className="text-slate-500 dark:text-slate-400">{t('wiz.first_payout')}</span>
+                    <span className="font-bold text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded">{orderedParticipants[0]?.name}</span>
                  </li>
                  <li className="flex justify-between items-center">
-                    <span className="text-slate-500">{t('wiz.last_payout')}</span>
-                    <span className="font-bold text-slate-900 bg-slate-50 px-2 py-1 rounded">{orderedParticipants[orderedParticipants.length-1]?.name}</span>
+                    <span className="text-slate-500 dark:text-slate-400">{t('wiz.last_payout')}</span>
+                    <span className="font-bold text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded">{orderedParticipants[orderedParticipants.length-1]?.name}</span>
                  </li>
                  <li className="flex justify-between items-center">
-                    <span className="text-slate-500">{t('wiz.locked_dates')}</span>
-                    <span className={`font-bold px-2 py-1 rounded ${lockedIndices.size > 0 ? 'bg-rose-100 text-rose-700' : 'bg-slate-50 text-slate-900'}`}>{lockedIndices.size} {t('wiz.members_count')}</span>
+                    <span className="text-slate-500 dark:text-slate-400">{t('wiz.locked_dates')}</span>
+                    <span className={`font-bold px-2 py-1 rounded ${lockedIndices.size > 0 ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400' : 'bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white'}`}>{lockedIndices.size} {t('wiz.members_count')}</span>
                  </li>
                </ul>
             </div>
@@ -768,13 +768,13 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
       </div>
 
       {/* Footer Actions - Fixed at Bottom */}
-      <div className="flex-shrink-0 bg-white/95 backdrop-blur-md border-t border-slate-200 p-4 md:p-6 z-50 flex justify-between">
+      <div className="flex-shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 p-4 md:p-6 z-50 flex justify-between">
           {step === 1 ? (
-            <button onClick={onCancel} className="text-slate-400 font-semibold hover:text-slate-600 px-4">
+            <button onClick={onCancel} className="text-slate-400 dark:text-slate-500 font-semibold hover:text-slate-600 dark:hover:text-slate-300 px-4">
               {t('wiz.btn_cancel')}
             </button>
           ) : (
-            <button onClick={() => setStep(step - 1)} className="flex items-center text-slate-500 font-semibold hover:text-slate-800 px-4">
+            <button onClick={() => setStep(step - 1)} className="flex items-center text-slate-500 dark:text-slate-400 font-semibold hover:text-slate-800 dark:hover:text-slate-200 px-4">
               <ChevronLeft size={20} className="mr-1" /> {t('wiz.btn_back')}
             </button>
           )}

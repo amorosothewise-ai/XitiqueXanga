@@ -13,7 +13,7 @@ const ActivityLogViewer: React.FC<ActivityLogViewerProps> = ({ logs }) => {
 
     if (logs.length === 0) {
         return (
-            <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
                 <Info className="mx-auto text-slate-300 mb-2" size={32} />
                 <p className="text-slate-400 text-sm italic">{t('profile.no_logs') || 'No activity recorded yet.'}</p>
             </div>
@@ -21,10 +21,10 @@ const ActivityLogViewer: React.FC<ActivityLogViewerProps> = ({ logs }) => {
     }
 
     return (
-        <div className="overflow-hidden border border-slate-100 rounded-2xl bg-white shadow-sm">
+        <div className="overflow-hidden border border-slate-100 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 shadow-sm">
             <div className="overflow-x-auto custom-scrollbar">
                 <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                    <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                         <tr>
                             <th className="p-4">{t('profile.log_action') || 'Action'}</th>
                             <th className="p-4">{t('profile.log_date') || 'Date'}</th>
@@ -33,7 +33,7 @@ const ActivityLogViewer: React.FC<ActivityLogViewerProps> = ({ logs }) => {
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                         {logs.map((log) => (
-                            <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                            <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0">
                                 <td className="p-4">
                                     <div className="flex flex-col">
                                         <span className="font-bold text-slate-700">{log.action.replace(/_/g, ' ')}</span>

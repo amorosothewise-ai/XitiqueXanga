@@ -31,11 +31,11 @@ const FinancialTip: React.FC<FinancialTipProps> = ({ context }) => {
   return (
     <div className={`rounded-xl p-4 border flex items-start gap-3 transition-all animate-fade-in ${
       isWarning 
-        ? 'bg-amber-50 border-amber-200 text-amber-900' 
-        : 'bg-indigo-50 border-indigo-100 text-indigo-900'
+        ? 'bg-amber-50 border-amber-200 text-amber-900 dark:bg-amber-900/20 dark:border-amber-800/50 dark:text-amber-200' 
+        : 'bg-indigo-50 border-indigo-100 text-indigo-900 dark:bg-indigo-900/20 dark:border-indigo-800/50 dark:text-indigo-200'
     }`}>
-      <div className={`p-2 rounded-lg ${isWarning ? 'bg-amber-100' : 'bg-indigo-100'}`}>
-        {isWarning ? <ShieldAlert size={20} className="text-amber-600" /> : <Lightbulb size={20} className="text-indigo-600" />}
+      <div className={`p-2 rounded-lg ${isWarning ? 'bg-amber-100 dark:bg-amber-900/50' : 'bg-indigo-100 dark:bg-indigo-900/50'}`}>
+        {isWarning ? <ShieldAlert size={20} className="text-amber-600 dark:text-amber-400" /> : <Lightbulb size={20} className="text-indigo-600 dark:text-indigo-400" />}
       </div>
       <div>
         <h4 className="text-xs font-bold uppercase tracking-wide opacity-70 mb-1">

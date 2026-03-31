@@ -172,7 +172,7 @@ const ArchitectureInfo: React.FC = () => {
 
 const EntityCard: React.FC<{icon: React.ReactNode, title: string, desc: string, color: string}> = ({ icon, title, desc, color }) => (
     <div className={`p-6 rounded-2xl border ${color} transition-all hover:shadow-md`}>
-        <div className="bg-white w-12 h-12 rounded-xl flex items-center justify-center mb-4 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 w-12 h-12 rounded-xl flex items-center justify-center mb-4 shadow-sm">
             {icon}
         </div>
         <h3 className="text-lg font-bold text-slate-900 mb-2">{title}</h3>
@@ -181,7 +181,7 @@ const EntityCard: React.FC<{icon: React.ReactNode, title: string, desc: string, 
 );
 
 const PrincipleRow: React.FC<{icon: React.ReactNode, title: string, desc: string}> = ({ icon, title, desc }) => (
-    <div className="flex items-start gap-4 bg-white p-6 rounded-2xl border border-slate-200 hover:border-emerald-200 transition-colors shadow-sm">
+    <div className="flex items-start gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-emerald-200 dark:hover:border-emerald-500 transition-colors shadow-sm">
         <div className="bg-slate-100 p-3 rounded-xl text-slate-600 mt-1">
             {icon}
         </div>
@@ -196,12 +196,12 @@ const ScenarioCard: React.FC<{icon: React.ReactNode, title: string, risk: string
   icon, title, risk, logic, bg
 }) => (
   <div className={`p-6 rounded-2xl border ${bg} hover:shadow-md transition-all`}>
-      <div className="bg-white w-12 h-12 rounded-xl flex items-center justify-center mb-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 w-12 h-12 rounded-xl flex items-center justify-center mb-4 shadow-sm">
           {icon}
       </div>
       <h3 className="text-lg font-bold text-slate-900 mb-3">{title}</h3>
       <div className="space-y-3">
-        <div className="bg-white/60 p-3 rounded-lg text-xs font-semibold text-slate-700">
+        <div className="bg-white/60 dark:bg-slate-900/60 p-3 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300">
            {risk}
         </div>
         <p className="text-sm text-slate-600 leading-relaxed">

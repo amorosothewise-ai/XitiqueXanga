@@ -187,13 +187,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutoria
                 </button>
             </div>
             
-            <div className="flex bg-white rounded-xl border border-slate-200 p-1">
+            <div className="flex bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-1">
                 <button 
                     onClick={() => setActiveTab('active')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                         activeTab === 'active' 
                         ? 'bg-emerald-500 text-white shadow-sm' 
-                        : 'text-slate-500 hover:bg-slate-50'
+                        : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                 >
                     <Activity size={16} /> {t('dash.tab_active')}
@@ -202,8 +202,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutoria
                     onClick={() => setActiveTab('history')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                         activeTab === 'history' 
-                        ? 'bg-slate-800 text-white shadow-sm' 
-                        : 'text-slate-500 hover:bg-slate-50'
+                        ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-sm' 
+                        : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                 >
                     <Archive size={16} /> {t('dash.tab_history')}
@@ -228,27 +228,27 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutoria
         {/* Join Modal */}
         {showJoinModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6 relative border dark:border-slate-800">
                     <button 
                         onClick={() => setShowJoinModal(false)}
-                        className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+                        className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                     >
                         <X size={20} />
                     </button>
                     
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">Join a Circle</h3>
-                    <p className="text-slate-500 text-sm mb-6">Enter the 6-character invite code provided by the circle organizer.</p>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Join a Circle</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Enter the 6-character invite code provided by the circle organizer.</p>
                     
                     <form onSubmit={handleJoin} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">Invite Code</label>
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Invite Code</label>
                             <input 
                                 type="text" 
                                 value={inviteCode}
                                 onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                                 placeholder="E.g. AB12CD"
                                 maxLength={6}
-                                className="w-full p-4 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-center font-mono text-2xl tracking-widest"
+                                className="w-full p-4 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-center font-mono text-2xl tracking-widest"
                                 autoFocus
                             />
                         </div>
@@ -276,31 +276,31 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutoria
                 transition={{ duration: 0.2 }}
             >
             {activeTab === 'active' ? (
-                <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300 shadow-sm hover:border-emerald-300 transition-colors group cursor-pointer" onClick={onCreate}>
-                    <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-500 group-hover:scale-110 transition-transform">
+                <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 shadow-sm hover:border-emerald-300 dark:hover:border-emerald-500 transition-colors group cursor-pointer" onClick={onCreate}>
+                    <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-500 group-hover:scale-110 transition-transform">
                         <Wallet size={32} />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-800 mb-2">{t('dash.no_active')}</h3>
-                    <p className="text-slate-500 mb-8 max-w-sm mx-auto">{t('dash.start_new')}</p>
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">{t('dash.no_active')}</h3>
+                    <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-sm mx-auto">{t('dash.start_new')}</p>
                     <div className="flex flex-col md:flex-row justify-center gap-4 px-6">
                         <button 
                             onClick={(e) => { e.stopPropagation(); onCreate(); }}
-                            className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-3 rounded-xl font-bold shadow-xl shadow-slate-200 transition-all inline-flex items-center justify-center transform group-hover:-translate-y-1"
+                            className="bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white px-8 py-3 rounded-xl font-bold shadow-xl shadow-slate-200 dark:shadow-none transition-all inline-flex items-center justify-center transform group-hover:-translate-y-1"
                         >
                             <PlusCircle size={18} className="mr-2" /> {t('dash.btn_init')}
                         </button>
                         <button 
                             onClick={(e) => { e.stopPropagation(); setShowJoinModal(true); }}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold shadow-xl shadow-blue-200 transition-all inline-flex items-center justify-center transform group-hover:-translate-y-1"
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold shadow-xl shadow-blue-200 dark:shadow-none transition-all inline-flex items-center justify-center transform group-hover:-translate-y-1"
                         >
                             <LogIn size={18} className="mr-2" /> {t('dash.btn_join', 'Join Existing')}
                         </button>
                     </div>
                 </div>
             ) : (
-                <div className="text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
-                    <Archive size={32} className="mx-auto mb-4 text-slate-300" />
-                    <p className="text-slate-400 font-medium">{t('dash.no_archived')}</p>
+                <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
+                    <Archive size={32} className="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
+                    <p className="text-slate-400 dark:text-slate-500 font-medium">{t('dash.no_archived')}</p>
                 </div>
             )}
             </motion.div>
@@ -323,34 +323,34 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutoria
                     <div 
                         key={x.id} 
                         onClick={() => onSelect(x)}
-                        className={`bg-white p-6 rounded-2xl border transition-all duration-300 cursor-pointer group relative overflow-hidden ${
-                            isArchived ? 'opacity-60 grayscale border-slate-100' :
-                            isCompleted ? 'border-indigo-100 opacity-90 hover:opacity-100' :
-                            isDaily ? 'border-amber-100 hover:border-amber-300 shadow-sm hover:shadow-xl' : 
-                            'border-slate-200 hover:border-emerald-300 shadow-sm hover:shadow-xl'
+                        className={`bg-white dark:bg-slate-900 p-6 rounded-2xl border transition-all duration-300 cursor-pointer group relative overflow-hidden ${
+                            isArchived ? 'opacity-60 grayscale border-slate-100 dark:border-slate-800' :
+                            isCompleted ? 'border-indigo-100 dark:border-indigo-900/50 opacity-90 hover:opacity-100' :
+                            isDaily ? 'border-amber-100 dark:border-amber-900/50 hover:border-amber-300 dark:hover:border-amber-500 shadow-sm hover:shadow-xl' : 
+                            'border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-500 shadow-sm hover:shadow-xl'
                         }`}
                     >
                         <div className="absolute top-4 right-4">
-                            {isArchived && <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-lg uppercase">Archived</span>}
-                            {!isArchived && isCompleted && <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-lg uppercase">Done</span>}
-                            {!isArchived && x.status === XitiqueStatus.RISK && <span className="bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-1 rounded-lg uppercase">Action Needed</span>}
+                            {isArchived && <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold px-2 py-1 rounded-lg uppercase">Archived</span>}
+                            {!isArchived && isCompleted && <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold px-2 py-1 rounded-lg uppercase">Done</span>}
+                            {!isArchived && x.status === XitiqueStatus.RISK && <span className="bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300 text-[10px] font-bold px-2 py-1 rounded-lg uppercase">Action Needed</span>}
                         </div>
 
                         <div className="relative z-10">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className={`h-14 w-14 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg ${
-                                    isArchived ? 'bg-slate-400' :
-                                    isCompleted ? 'bg-indigo-400' :
+                                    isArchived ? 'bg-slate-400 dark:bg-slate-600' :
+                                    isCompleted ? 'bg-indigo-400 dark:bg-indigo-600' :
                                     isDaily ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 
                                     'bg-gradient-to-br from-teal-400 to-emerald-600'
                                 }`}>
                                     {x.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-slate-900 leading-tight group-hover:text-emerald-700 transition-colors truncate max-w-[140px]">
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors truncate max-w-[140px]">
                                         {x.name}
                                     </h3>
-                                    <div className="flex items-center text-xs font-semibold text-slate-400 mt-1 uppercase tracking-wider">
+                                    <div className="flex items-center text-xs font-semibold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-wider">
                                         {x.frequency === 'WEEKLY' ? t('wiz.weekly') : x.frequency === 'MONTHLY' ? t('wiz.monthly') : t('wiz.daily')}
                                         <span className="mx-1">•</span>
                                         {x.participants.length} {t('detail.members')}
@@ -359,15 +359,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutoria
                             </div>
 
                             <div className="mb-6">
-                                <div className="flex justify-between text-xs font-semibold text-slate-500 mb-2">
+                                <div className="flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
                                     <span>{t('dash.progress')}</span>
-                                    <span className="text-slate-900">{Math.round(progress)}%</span>
+                                    <span className="text-slate-900 dark:text-white">{Math.round(progress)}%</span>
                                 </div>
-                                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
                                     <div 
                                     className={`h-2 rounded-full transition-all duration-1000 ease-out ${
-                                        isArchived ? 'bg-slate-400' :
-                                        isCompleted ? 'bg-indigo-400' :
+                                        isArchived ? 'bg-slate-400 dark:bg-slate-600' :
+                                        isCompleted ? 'bg-indigo-400 dark:bg-indigo-500' :
                                         isDaily ? 'bg-amber-500' : 
                                         'bg-gradient-to-r from-teal-400 to-emerald-500'
                                     }`} 
@@ -376,14 +376,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutoria
                                 </div>
                             </div>
 
-                            <div className="flex justify-between items-center pt-4 border-t border-slate-50">
+                            <div className="flex justify-between items-center pt-4 border-t border-slate-50 dark:border-slate-800">
                             <div>
-                                <div className="text-xs text-slate-400 font-bold uppercase">{t('detail.total_payout')}</div>
-                                <div className="text-lg font-bold text-slate-900">
+                                <div className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">{t('detail.total_payout')}</div>
+                                <div className="text-lg font-bold text-slate-900 dark:text-white">
                                     {formatCurrency(x.amount * x.participants.length)}
                                 </div>
                             </div>
-                            <div className={`w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center transition-colors group-hover:bg-slate-900 group-hover:text-white`}>
+                            <div className={`w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center transition-colors group-hover:bg-slate-900 dark:group-hover:bg-slate-700 group-hover:text-white dark:text-slate-300`}>
                                 <ChevronRight size={16} />
                             </div>
                             </div>
@@ -401,14 +401,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutoria
                             disabled={currentPage === 1}
                             className={`p-2 rounded-lg border transition-all ${
                                 currentPage === 1 
-                                ? 'text-slate-300 border-slate-100 cursor-not-allowed' 
-                                : 'text-slate-600 border-slate-200 hover:bg-slate-50'
+                                ? 'text-slate-300 border-slate-100 cursor-not-allowed dark:text-slate-600 dark:border-slate-800' 
+                                : 'text-slate-600 border-slate-200 hover:bg-slate-50 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-800'
                             }`}
                         >
                             <ChevronLeft size={20} />
                         </button>
                         
-                        <div className="text-sm font-bold text-slate-600">
+                        <div className="text-sm font-bold text-slate-600 dark:text-slate-400">
                             {t('dash.page')} {currentPage} {t('dash.of')} {totalPages}
                         </div>
 
@@ -417,8 +417,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutoria
                             disabled={currentPage === totalPages}
                             className={`p-2 rounded-lg border transition-all ${
                                 currentPage === totalPages 
-                                ? 'text-slate-300 border-slate-100 cursor-not-allowed' 
-                                : 'text-slate-600 border-slate-200 hover:bg-slate-50'
+                                ? 'text-slate-300 border-slate-100 cursor-not-allowed dark:text-slate-600 dark:border-slate-800' 
+                                : 'text-slate-600 border-slate-200 hover:bg-slate-50 dark:text-slate-400 dark:border-slate-700 dark:hover:bg-slate-800'
                             }`}
                         >
                             <ChevronRight size={20} />

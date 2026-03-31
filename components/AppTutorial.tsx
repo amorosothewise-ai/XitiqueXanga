@@ -69,18 +69,18 @@ const AppTutorial: React.FC<Props> = ({ onComplete, onClose }) => {
       icon: <DollarSign className="text-emerald-500" size={32} />,
       render: () => (
         <div className="space-y-6 py-4">
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
             <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Nome do Grupo</label>
             <input 
               type="text" 
               value={simName}
               onChange={(e) => setSimName(e.target.value)}
               placeholder="Ex: Família, Amigos..."
-              className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-700"
+              className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-700 dark:text-slate-200"
               autoFocus
             />
           </div>
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
             <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Valor da Contribuição</label>
             <div className="flex items-center gap-4">
               <input 
@@ -111,7 +111,7 @@ const AppTutorial: React.FC<Props> = ({ onComplete, onClose }) => {
             <button
               key={f}
               onClick={() => setSimFreq(f)}
-              className={`p-6 rounded-2xl border-2 transition-all flex items-center justify-between ${simFreq === f ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-slate-100 bg-white hover:border-slate-200'}`}
+              className={`p-6 rounded-2xl border-2 transition-all flex items-center justify-between ${simFreq === f ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md' : 'border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-200 dark:hover:border-slate-600'}`}
             >
               <div className="flex items-center gap-4">
                 <div className={`p-3 rounded-xl ${simFreq === f ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
@@ -167,7 +167,7 @@ const AppTutorial: React.FC<Props> = ({ onComplete, onClose }) => {
                     initial={{ x: -20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     key={i} 
-                    className="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between shadow-sm"
+                    className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-sm"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
@@ -238,7 +238,7 @@ const AppTutorial: React.FC<Props> = ({ onComplete, onClose }) => {
       <motion.div 
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="bg-white w-full max-w-2xl rounded-3xl md:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] md:max-h-[90vh]"
+        className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl md:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] md:max-h-[90vh] border border-slate-200 dark:border-slate-800"
       >
         {/* Header */}
         <div className="p-4 md:p-8 pb-3 md:pb-4 flex justify-between items-start">

@@ -127,17 +127,17 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 animate-fade-in">
+    <div className="fixed inset-0 z-[100] bg-white dark:bg-slate-900 flex flex-col items-center justify-center p-6 animate-fade-in">
       <div className="w-full max-w-md text-center">
         
         {/* Visual Container */}
-        <div className="h-56 flex items-center justify-center mb-8 bg-slate-50 rounded-3xl w-full max-w-xs mx-auto">
+        <div className="h-56 flex items-center justify-center mb-8 bg-slate-50 dark:bg-slate-800 rounded-3xl w-full max-w-xs mx-auto">
            {steps[step].renderVisual()}
         </div>
 
         {/* Content */}
-        <h1 className="text-3xl font-bold text-slate-900 mb-4 tracking-tight">{steps[step].title}</h1>
-        <p className="text-slate-500 text-lg leading-relaxed mb-10 h-24 px-4">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-4 tracking-tight">{steps[step].title}</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-lg leading-relaxed mb-10 h-24 px-4">
             {steps[step].desc}
         </p>
 
@@ -146,7 +146,7 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
             {steps.map((_, i) => (
                 <div 
                   key={i} 
-                  className={`h-2 rounded-full transition-all duration-500 ${i === step ? 'w-10 bg-emerald-500 shadow-lg shadow-emerald-200' : 'w-2 bg-slate-200'}`}
+                  className={`h-2 rounded-full transition-all duration-500 ${i === step ? 'w-10 bg-emerald-500 shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50' : 'w-2 bg-slate-200 dark:bg-slate-700'}`}
                 />
             ))}
         </div>
