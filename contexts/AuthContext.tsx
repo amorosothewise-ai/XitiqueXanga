@@ -57,11 +57,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setLoading(false);
         }
       } catch (err: any) {
-        if (err.message === 'Invalid Refresh Token: Refresh Token Not Found') {
-          await apiLogout();
+        if (err.message?.includes('Refresh Token') || err.message?.includes('refresh token')) {
+          // Ignore and clear session gracefully
+          try {
+            await supabase.auth.signOut();
+          } catch (e) {
+            // ignore signout errors if token is already invalid
+          }
           setUser(null);
+        } else {
+          console.error("Auth session check failed:", err);
         }
-        console.error("Auth session check failed:", err);
         setLoading(false);
       }
     };

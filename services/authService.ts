@@ -100,7 +100,9 @@ export const resendVerification = async (email: string): Promise<void> => {
 export const logout = async (): Promise<void> => {
   if (!isSupabaseConfigured) return;
   const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  if (error && !error.message?.includes('Refresh Token') && !error.message?.includes('refresh token')) {
+    throw error;
+  }
 };
 
 // Internal helper for Context to get current session
