@@ -90,7 +90,7 @@ const XitiqueHeader: React.FC<Props> = ({
         )}
 
         <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 md:gap-4">
-          <div className={`flex items-center gap-2 md:gap-3 bg-white/10 backdrop-blur-md px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-white/10 relative ${isEditMode ? 'bg-slate-800 border-slate-600' : ''}`}>
+          <div className={`flex items-center gap-2 md:gap-3 bg-white/10 backdrop-blur-md px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-white/10 relative transition-all ${isEditMode ? 'bg-emerald-900/20 border-emerald-500/50 shadow-lg' : ''}`}>
             <div className="bg-emerald-400/20 p-1.5 md:p-2 rounded-lg shrink-0">
               <DollarSign size={16} className="text-emerald-400" />
             </div>
@@ -103,15 +103,15 @@ const XitiqueHeader: React.FC<Props> = ({
                   type="number"
                   value={tempAmount}
                   onChange={(e) => onAmountChange(Number(e.target.value))}
-                  className="bg-transparent border-b border-slate-500 w-full text-sm md:text-xl font-bold text-white focus:outline-none focus:border-emerald-500"
+                  className="bg-transparent border-b border-emerald-500 w-full text-sm md:text-xl font-bold text-emerald-300 focus:outline-none focus:border-emerald-400"
                 />
               ) : (
-                <div className="text-sm md:text-xl font-bold truncate">{formatCurrency(totalVolume)}</div>
+                <div className="text-sm md:text-xl font-bold truncate text-white">{formatCurrency(totalVolume)}</div>
               )}
             </div>
           </div>
 
-          <div className={`flex items-center gap-2 md:gap-3 bg-white/10 backdrop-blur-md px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-white/10 ${isEditMode ? 'bg-slate-800 border-slate-600' : ''}`}>
+          <div className={`flex items-center gap-2 md:gap-3 bg-white/10 backdrop-blur-md px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-white/10 transition-all ${isEditMode ? 'bg-purple-900/20 border-purple-500/50 shadow-lg' : ''}`}>
             <div className="bg-purple-400/20 p-1.5 md:p-2 rounded-lg shrink-0">
               <Calendar size={16} className="text-purple-400" />
             </div>
@@ -123,11 +123,11 @@ const XitiqueHeader: React.FC<Props> = ({
                     type="date"
                     value={tempStartDate}
                     onChange={(e) => onStartDateChange(e.target.value)}
-                    className="bg-transparent text-white font-bold text-[10px] md:text-sm focus:outline-none w-full"
+                    className="bg-transparent text-purple-300 font-bold text-[10px] md:text-sm focus:outline-none w-full border-b border-purple-500"
                   />
                 </div>
               ) : (
-                <div className="text-sm md:text-xl font-bold truncate">{formatDate(xitique.startDate)}</div>
+                <div className="text-sm md:text-xl font-bold truncate text-white">{formatDate(xitique.startDate)}</div>
               )}
             </div>
           </div>

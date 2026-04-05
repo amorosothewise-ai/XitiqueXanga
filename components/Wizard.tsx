@@ -5,7 +5,7 @@ import { Frequency, Xitique, PaymentMethod, ContributionMode, XitiqueStatus, Xit
 import { createNewXitique, saveXitique } from '../services/storage';
 import { addPeriod, formatDate } from '../services/dateUtils';
 import { formatCurrency } from '../services/formatUtils';
-import { ChevronRight, ChevronLeft, Check, UserPlus, Trash2, ArrowUp, ArrowDown, Calendar, GripVertical, Lock, Unlock, Smartphone, Banknote, RefreshCw, Loader2, Scale, BarChart3, Shuffle } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, UserPlus, Trash2, ArrowUp, ArrowDown, Calendar, GripVertical, Lock, Unlock, Smartphone, Banknote, RefreshCw, Loader2, Scale, BarChart3, Shuffle, ArrowDownUp, RotateCw } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
 
@@ -59,7 +59,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
         const hasCustom = initialData.participants?.some(p => p.customContribution !== undefined && p.customContribution !== initialData.amount) || false;
         setContributionMode(hasCustom ? ContributionMode.VARIABLE : ContributionMode.UNIFORM);
 
-        // Extract names and amounts, preserving order
+        // Extract names and amounts, preserving order by default
         let pData = [...(initialData.participants || [])]
             .sort((a, b) => a.order - b.order)
             .map(p => ({
@@ -297,6 +297,49 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
     } else {
         addToast('Ordem misturada (Bloqueios mantidos)', 'success');
     }
+  };
+
+  const handleReverse = () => {
+    const newOrder = [...orderedParticipants];
+    const availableSlots = newOrder.map((_, i) => i).filter(i => !lockedIndices.has(i));
+    
+    if (availableSlots.length < 2) {
+        addToast("Precisa de pelo menos 2 posições livres para inverter", 'info');
+        return;
+    }
+
+    const peopleToReverse = availableSlots.map(i => newOrder[i]).reverse();
+    
+    availableSlots.forEach((slotIndex, i) => {
+        newOrder[slotIndex] = peopleToReverse[i];
+    });
+
+    setOrderedParticipants(newOrder);
+    addToast('Ordem invertida (Justiça de Posição)', 'success');
+  };
+
+  const handleRotate = () => {
+    const newOrder = [...orderedParticipants];
+    const availableSlots = newOrder.map((_, i) => i).filter(i => !lockedIndices.has(i));
+    
+    if (availableSlots.length < 2) {
+        addToast("Precisa de pelo menos 2 posições livres para rotacionar", 'info');
+        return;
+    }
+
+    const peopleToRotate = availableSlots.map(i => newOrder[i]);
+    // Shift by 1: last person goes to first available slot
+    const lastPerson = peopleToRotate.pop();
+    if (lastPerson) {
+        peopleToRotate.unshift(lastPerson);
+    }
+    
+    availableSlots.forEach((slotIndex, i) => {
+        newOrder[slotIndex] = peopleToRotate[i];
+    });
+
+    setOrderedParticipants(newOrder);
+    addToast('Ordem rotacionada (Rotatividade Contínua)', 'success');
   };
 
   const handleFinish = async () => {
@@ -640,14 +683,32 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 ml-10">{t('wiz.algo_desc')}</p>
                     </div>
                     
-                    <button 
-                      onClick={handleShuffle}
-                      className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-xl font-bold text-sm transition-colors border border-slate-200 dark:border-slate-700"
-                      title="Shuffle non-locked members"
-                    >
-                       <Shuffle size={16} /> 
-                       Misturar
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button 
+                          onClick={handleRotate}
+                          className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-2 rounded-xl font-bold text-sm transition-colors border border-slate-200 dark:border-slate-700"
+                          title="Rotacionar ordem (o último passa a ser o primeiro)"
+                        >
+                           <RotateCw size={16} /> 
+                           <span className="hidden md:inline">Rotacionar</span>
+                        </button>
+                        <button 
+                          onClick={handleReverse}
+                          className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-2 rounded-xl font-bold text-sm transition-colors border border-slate-200 dark:border-slate-700"
+                          title="Inverter ordem (o último passa a ser o primeiro e vice-versa)"
+                        >
+                           <ArrowDownUp size={16} /> 
+                           <span className="hidden md:inline">Inverter</span>
+                        </button>
+                        <button 
+                          onClick={handleShuffle}
+                          className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-2 rounded-xl font-bold text-sm transition-colors border border-slate-200 dark:border-slate-700"
+                          title="Misturar membros não bloqueados"
+                        >
+                           <Shuffle size={16} /> 
+                           <span className="hidden md:inline">Misturar</span>
+                        </button>
+                    </div>
                 </div>
                 
                 <div className="space-y-3 bg-white dark:bg-slate-800 p-3 md:p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">

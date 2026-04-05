@@ -281,6 +281,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDel
 
   const handleSaveGlobalEdit = async () => {
     setIsSaving(true);
+    console.log("Saving Xitique:", { tempName, tempAmount, tempStartDate });
     try {
         let updatedParticipants = [...xitique.participants];
         
@@ -293,7 +294,9 @@ const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDel
         const amountChanged = xitique.amount !== tempAmount;
 
         // Apply Date Updates if changed
-        if (dateChanged) {
+        let finalStartDate = xitique.startDate;
+        if (dateChanged && newDate) {
+            finalStartDate = new Date(newDate).toISOString();
             updatedParticipants = updatedParticipants.map((p, index) => ({
                 ...p,
                 payoutDate: addPeriod(newDate, xitique.frequency, index)
@@ -314,11 +317,12 @@ const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDel
             ...xitique,
             name: tempName,
             amount: tempAmount,
-            startDate: new Date(newDate).toISOString(),
+            startDate: finalStartDate,
             participants: updatedParticipants,
             status: newStatus
         };
 
+        console.log("Updated Xitique object:", updatedXitique);
         await saveXitique(updatedXitique);
         
         // Apply to local state
@@ -327,7 +331,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDel
         setIsGlobalEditMode(false);
         addToast(t('common.success'), 'success');
     } catch (error) {
-        console.error(error);
+        console.error("Save error:", error);
         addToast(t('common.error'), 'error');
     } finally {
         setIsSaving(false);
