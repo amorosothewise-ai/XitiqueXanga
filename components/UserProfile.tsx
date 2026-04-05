@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { User, Save, Globe, Mail, Bell, Shield, Key, Clock, LogOut, Loader2, Camera, FileText, AlertCircle, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useToast } from '../contexts/ToastContext';
@@ -406,8 +407,8 @@ const UserProfile: React.FC = () => {
         </CollapsibleSection>
 
         {/* Password Modal */}
-        {passwordModalOpen && (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        {passwordModalOpen && createPortal(
+            <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
                 <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-fade-in border dark:border-slate-800">
                     <h3 className="text-lg font-bold mb-4 dark:text-white">{t('profile.pass_modal_title')}</h3>
                     <div className="space-y-4 mb-6">
@@ -433,7 +434,8 @@ const UserProfile: React.FC = () => {
                         </button>
                     </div>
                 </div>
-            </div>
+            </div>,
+            document.getElementById('root')!
         )}
 
         {/* Logout Modal */}

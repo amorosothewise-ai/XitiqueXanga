@@ -38,72 +38,83 @@ export const getXitiques = async (): Promise<Xitique[]> => {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) return [];
 
-  // Fetch Xitiques where user is owner OR participant
-  // First, get IDs of xitiques where user is a participant
-  const { data: participantLinks } = await supabase
-    .from('participants')
-    .select('xitique_id')
-    .eq('user_id', user.user.id);
-  
-  const participantXitiqueIds = (participantLinks || []).map((p: any) => p.xitique_id);
-
-  // Fetch Xitiques
-  let query = supabase
+  // Fetch Xitiques where user is owner
+  const { data: xitiquesData, error: xitiquesError } = await supabase
     .from('xitiques')
-    .select(`
-      *,
-      participants (*),
-      transactions (*)
-    `)
-    .neq('status', 'ARCHIVED');
-  
-  if (participantXitiqueIds.length > 0) {
-    query = query.or(`user_id.eq.${user.user.id},id.in.(${participantXitiqueIds.join(',')})`);
-  } else {
-    query = query.eq('user_id', user.user.id);
-  }
+    .select('*')
+    .neq('status', 'ARCHIVED')
+    .eq('user_id', user.user.id)
+    .order('created_at', { ascending: false });
 
-  const { data, error } = await query.order('created_at', { ascending: false });
-
-  if (error) {
-    console.error("Error fetching xitiques:", error);
-    // Fallback to cache on error if available
+  if (xitiquesError) {
+    console.error("Error fetching xitiques:", xitiquesError);
     const cached = localStorage.getItem(CACHE_XITIQUES_KEY);
     return cached ? JSON.parse(cached) : [];
   }
 
+  if (!xitiquesData || xitiquesData.length === 0) {
+      return [];
+  }
+
+  const xitiqueIds = xitiquesData.map((x: any) => x.id);
+
+  // Fetch participants separately
+  const { data: participantsData, error: participantsError } = await supabase
+    .from('participants')
+    .select('*')
+    .in('xitique_id', xitiqueIds);
+
+  if (participantsError) {
+      console.error("Error fetching participants:", participantsError);
+  }
+
+  // Fetch transactions separately
+  const { data: transactionsData, error: transactionsError } = await supabase
+    .from('transactions')
+    .select('*')
+    .in('xitique_id', xitiqueIds);
+
+  if (transactionsError) {
+      console.error("Error fetching transactions:", transactionsError);
+  }
+
   // Map Database Snake_case to App CamelCase
-  const mappedData = data.map((x: any) => ({
-    id: x.id,
-    name: x.name,
-    inviteCode: x.invite_code,
-    type: x.type as XitiqueType,
-    amount: Number(x.amount),
-    targetAmount: x.target_amount ? Number(x.target_amount) : undefined,
-    currentBalance: 0, // Derived elsewhere
-    method: x.method,
-    frequency: x.frequency,
-    startDate: x.start_date,
-    status: x.status as XitiqueStatus,
-    createdAt: new Date(x.created_at).getTime(),
-    participants: (x.participants || []).map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      userId: p.user_id,
-      received: p.received,
-      order: p.order,
-      payoutDate: p.payout_date,
-      customContribution: p.custom_contribution ? Number(p.custom_contribution) : undefined
-    })).sort((a: any, b: any) => a.order - b.order),
-    transactions: (x.transactions || []).map((t: any) => ({
-      id: t.id,
-      type: t.type,
-      amount: Number(t.amount),
-      date: t.date,
-      description: t.description,
-      referenceId: t.reference_id
-    })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }));
+  const mappedData = xitiquesData.map((x: any) => {
+    const xParticipants = (participantsData || []).filter((p: any) => p.xitique_id === x.id);
+    const xTransactions = (transactionsData || []).filter((t: any) => t.xitique_id === x.id);
+
+    return {
+      id: x.id,
+      name: x.name,
+      inviteCode: x.invite_code,
+      type: x.type as XitiqueType,
+      amount: Number(x.amount),
+      targetAmount: x.target_amount ? Number(x.target_amount) : undefined,
+      currentBalance: 0, // Derived elsewhere
+      method: x.method,
+      frequency: x.frequency,
+      startDate: x.start_date,
+      status: x.status as XitiqueStatus,
+      createdAt: new Date(x.created_at).getTime(),
+      participants: xParticipants.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        userId: p.user_id,
+        received: p.received,
+        order: p.order,
+        payoutDate: p.payout_date,
+        customContribution: p.custom_contribution ? Number(p.custom_contribution) : undefined
+      })).sort((a: any, b: any) => a.order - b.order),
+      transactions: xTransactions.map((t: any) => ({
+        id: t.id,
+        type: t.type,
+        amount: Number(t.amount),
+        date: t.date,
+        description: t.description,
+        referenceId: t.reference_id
+      })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    };
+  });
 
   // Update Cache
   localStorage.setItem(CACHE_XITIQUES_KEY, JSON.stringify(mappedData));
@@ -242,75 +253,6 @@ export const deleteXitique = async (id: string): Promise<void> => {
     .eq('id', id);
 
   if (error) throw error;
-};
-
-export const joinXitique = async (inviteCode: string): Promise<void> => {
-  if (!isSupabaseConfigured) throw new Error("Supabase not configured");
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("User not authenticated");
-
-  // 1. Find Xitique by invite code
-  const { data: xitique, error: xError } = await supabase
-    .from('xitiques')
-    .select('id, name')
-    .eq('invite_code', inviteCode)
-    .single();
-
-  if (xError || !xitique) throw new Error("Circle not found with this code");
-
-  // 2. Check if user is already a participant
-  const { data: existing, error: eError } = await supabase
-    .from('participants')
-    .select('id')
-    .eq('xitique_id', xitique.id)
-    .eq('user_id', user.id)
-    .single();
-
-  if (existing) throw new Error("You are already in this circle");
-
-  // 3. Find an empty slot (participant with no user_id) or add a new one
-  // For simplicity, we'll try to find a participant with the same name as the user or just an empty slot
-  const { data: emptySlot } = await supabase
-    .from('participants')
-    .select('*')
-    .eq('xitique_id', xitique.id)
-    .is('user_id', null)
-    .order('order', { ascending: true })
-    .limit(1)
-    .single();
-
-  if (emptySlot) {
-    // Claim the slot
-    const { error: uError } = await supabase
-      .from('participants')
-      .update({ user_id: user.id, name: user.user_metadata.name || user.email })
-      .eq('id', emptySlot.id);
-    if (uError) throw uError;
-  } else {
-    // Add new participant at the end
-    const { data: lastParticipant } = await supabase
-      .from('participants')
-      .select('order')
-      .eq('xitique_id', xitique.id)
-      .order('order', { ascending: false })
-      .limit(1)
-      .single();
-    
-    const nextOrder = (lastParticipant?.order || 0) + 1;
-    
-    const { error: iError } = await supabase
-      .from('participants')
-      .insert({
-        id: crypto.randomUUID(),
-        xitique_id: xitique.id,
-        user_id: user.id,
-        name: user.user_metadata.name || user.email,
-        order: nextOrder,
-        received: false
-      });
-    if (iError) throw iError;
-  }
 };
 
 export const createNewXitique = (partial: Partial<Xitique>): Xitique => {

@@ -1,7 +1,7 @@
 
 import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
-import { Frequency, Xitique, PaymentMethod, ContributionMode, XitiqueStatus } from '../types';
+import { Frequency, Xitique, PaymentMethod, ContributionMode, XitiqueStatus, XitiqueType } from '../types';
 import { createNewXitique, saveXitique } from '../services/storage';
 import { addPeriod, formatDate } from '../services/dateUtils';
 import { formatCurrency } from '../services/formatUtils';
@@ -49,21 +49,32 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
   // Initialization Logic for Renewal
   useEffect(() => {
     if (initialData) {
-        setName(`${initialData.name} (Cycle 2)`);
+        const isAIPlan = initialData.status === XitiqueStatus.PLANNING;
+        setName(isAIPlan ? initialData.name : `${initialData.name} (Cycle 2)`);
         setAmount(initialData.amount);
         setFrequency(initialData.frequency);
         if(initialData.method) setMethod(initialData.method);
         
         // Detect if it was variable before by checking if any custom contributions existed
-        const hasCustom = initialData.participants.some(p => p.customContribution !== undefined && p.customContribution !== initialData.amount);
+        const hasCustom = initialData.participants?.some(p => p.customContribution !== undefined && p.customContribution !== initialData.amount) || false;
         setContributionMode(hasCustom ? ContributionMode.VARIABLE : ContributionMode.UNIFORM);
 
-        // Extract names and amounts
-        const pData = initialData.participants.map(p => ({
-            tempId: crypto.randomUUID(),
-            name: p.name,
-            amount: p.customContribution !== undefined ? p.customContribution : initialData.amount
-        }));
+        // Extract names and amounts, preserving order
+        let pData = [...(initialData.participants || [])]
+            .sort((a, b) => a.order - b.order)
+            .map(p => ({
+                tempId: crypto.randomUUID(),
+                name: p.name,
+                amount: p.customContribution !== undefined ? p.customContribution : initialData.amount
+            }));
+
+        // If no participants (e.g., from AI plan), initialize with 2 empty slots
+        if (pData.length === 0) {
+            pData = [
+                { tempId: crypto.randomUUID(), name: '', amount: initialData.amount }, 
+                { tempId: crypto.randomUUID(), name: '', amount: initialData.amount }
+            ];
+        }
         setParticipantsData(pData);
         
         // Ensure start date is today or future, not old date
@@ -312,7 +323,9 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, onCancel, initialData }) =>
       method,
       startDate: new Date(startDate).toISOString(),
       participants,
-      status: status 
+      status: status,
+      targetAmount: initialData?.targetAmount,
+      type: initialData?.type || XitiqueType.GROUP
     });
 
 

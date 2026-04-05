@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Sparkles, Target, Calendar, AlertCircle, ArrowRight, Loader2, Info, History } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Sparkles, Target, Calendar, AlertCircle, ArrowRight, Loader2, Info, History, Mic, MicOff } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { generateGoalPlan, getAIHistory, StoredAnalysis, PlanResult } from '../services/geminiService';
 
-const AIGoalPlanner: React.FC = () => {
+const AIGoalPlanner: React.FC<{ onAcceptPlan?: (plan: PlanResult) => void }> = ({ onAcceptPlan }) => {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const [prompt, setPrompt] = useState('');
@@ -13,12 +13,69 @@ const AIGoalPlanner: React.FC = () => {
   const [error, setError] = useState('');
   const [history, setHistory] = useState<StoredAnalysis[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const promptRef = useRef(prompt);
+  
+  useEffect(() => {
+    promptRef.current = prompt;
+  }, [prompt]);
+
+  const recognitionRef = useRef<any>(null);
+  const finalTranscriptRef = useRef('');
 
   useEffect(() => {
     if (user) {
       loadHistory();
     }
+    
+    // Setup Speech Recognition
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+
+      recognitionRef.current.onstart = () => {
+          finalTranscriptRef.current = promptRef.current ? promptRef.current + ' ' : '';
+      };
+
+      recognitionRef.current.onresult = (event: any) => {
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscriptRef.current += event.results[i][0].transcript + ' ';
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+        setPrompt(finalTranscriptRef.current + interimTranscript);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
   }, [user]);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      if (recognitionRef.current) {
+        recognitionRef.current.lang = language === 'pt' ? 'pt-MZ' : 'en-US';
+        recognitionRef.current.start();
+        setIsListening(true);
+      } else {
+        setError(language === 'pt' ? 'Reconhecimento de voz não suportado neste navegador.' : 'Speech recognition not supported in this browser.');
+      }
+    }
+  };
 
   const loadHistory = async () => {
     if (!user) return;
@@ -70,9 +127,18 @@ const AIGoalPlanner: React.FC = () => {
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-          {language === 'pt' ? 'Qual é o seu objetivo?' : 'What is your goal?'}
-        </label>
+        <div className="flex justify-between items-center mb-2">
+          <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
+            {language === 'pt' ? 'Qual é o seu objetivo?' : 'What is your goal?'}
+          </label>
+          <button 
+            onClick={toggleListening}
+            className={`p-2 rounded-full transition-colors ${isListening ? 'bg-coral-100 text-coral-600 animate-pulse' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'}`}
+            title={isListening ? 'Parar gravação' : 'Falar objetivo'}
+          >
+            {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+          </button>
+        </div>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
@@ -87,11 +153,11 @@ const AIGoalPlanner: React.FC = () => {
           </div>
         )}
 
-        <div className="mt-6 flex justify-between items-center">
+        <div className="mt-6 flex flex-col md:flex-row justify-between items-center gap-4">
           {history.length > 0 && (
             <button 
               onClick={() => setShowHistory(!showHistory)}
-              className="text-slate-500 hover:text-slate-700 flex items-center gap-2 text-sm font-bold"
+              className="text-slate-500 hover:text-slate-700 flex items-center gap-2 text-sm font-bold w-full md:w-auto justify-center md:justify-start"
             >
               <History size={16} />
               {showHistory ? 'Ocultar Histórico' : 'Ver Histórico'}
@@ -100,7 +166,7 @@ const AIGoalPlanner: React.FC = () => {
           <button
             onClick={handleGenerate}
             disabled={loading || !prompt.trim()}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto md:ml-auto"
           >
             {loading ? (
               <>
@@ -151,7 +217,7 @@ const AIGoalPlanner: React.FC = () => {
         <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 animate-fade-in">
           <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
             <Target className="text-emerald-500" />
-            {t('planner.result_title') || "Seu Plano de Ação"}
+            {plan.goalName || t('planner.result_title') || "Seu Plano de Ação"}
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -188,7 +254,10 @@ const AIGoalPlanner: React.FC = () => {
           </div>
           
           <div className="mt-6 flex justify-end">
-            <button className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-2 hover:gap-3 transition-all">
+            <button 
+              onClick={() => onAcceptPlan && onAcceptPlan(plan)}
+              className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-2 hover:gap-3 transition-all"
+            >
               {language === 'pt' ? 'Criar Grupo com este Plano' : 'Create Group with this Plan'}
               <ArrowRight size={18} />
             </button>

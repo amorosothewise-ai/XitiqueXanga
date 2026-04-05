@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Xitique, XitiqueType, Frequency, PaymentMethod, TransactionType } from '../types';
 import { getXitiques, saveXitique, createNewXitique, deleteXitique } from '../services/storage';
 import { calculateBalance, createTransaction, validateTransaction } from '../services/financeLogic';
@@ -488,8 +489,8 @@ const IndividualDashboard: React.FC = () => {
         />
 
         {/* Withdrawal Modal */}
-        {withdrawStick && (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        {withdrawStick && createPortal(
+            <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
                 <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-fade-in border dark:border-slate-800">
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{t('ind.withdraw_modal_title')}</h3>
                     <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">{t('ind.withdraw_modal_desc')}</p>
@@ -527,7 +528,8 @@ const IndividualDashboard: React.FC = () => {
                         </button>
                     </div>
                 </div>
-            </div>
+            </div>,
+            document.getElementById('root')!
         )}
 
         <div className="flex justify-between items-center">

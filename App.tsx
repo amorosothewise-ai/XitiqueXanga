@@ -14,8 +14,8 @@ import AuthScreen from './components/AuthScreen';
 import Onboarding from './components/Onboarding';
 import AppTutorial from './components/AppTutorial';
 import { useAuth } from './contexts/AuthContext';
-import { Xitique } from './types';
-import { deleteXitique, getUserPrefs, saveUserPrefs } from './services/storage';
+import { Xitique, Frequency, XitiqueType, XitiqueStatus } from './types';
+import { deleteXitique, getUserPrefs, saveUserPrefs, createNewXitique, saveXitique } from './services/storage';
 import { Loader2 } from 'lucide-react';
 
 type View = 'dashboard' | 'create' | 'detail' | 'info' | 'user' | 'individual' | 'planner' | 'about';
@@ -138,7 +138,31 @@ const App: React.FC = () => {
       case 'individual':
           return <IndividualDashboard />;
       case 'planner':
-          return <AIGoalPlanner />;
+          return <AIGoalPlanner onAcceptPlan={async (plan) => {
+              let freq = Frequency.MONTHLY;
+              const freqStr = plan.frequency.toLowerCase();
+              if (freqStr.includes('daily') || freqStr.includes('diário') || freqStr.includes('diario') || freqStr.includes('dia')) freq = Frequency.DAILY;
+              else if (freqStr.includes('weekly') || freqStr.includes('semanal') || freqStr.includes('semana')) freq = Frequency.WEEKLY;
+
+              const newXitique = createNewXitique({
+                  name: plan.goalName || `Objetivo: ${plan.targetAmount}`,
+                  amount: plan.contribution,
+                  targetAmount: plan.targetAmount,
+                  frequency: freq,
+                  type: XitiqueType.INDIVIDUAL,
+                  status: XitiqueStatus.ACTIVE,
+                  startDate: new Date().toISOString(),
+                  participants: [],
+                  transactions: []
+              });
+              
+              try {
+                  await saveXitique(newXitique);
+                  setCurrentView('individual');
+              } catch (error) {
+                  console.error("Error saving AI plan:", error);
+              }
+          }} />;
       case 'info':
         return <ArchitectureInfo />;
       case 'about':

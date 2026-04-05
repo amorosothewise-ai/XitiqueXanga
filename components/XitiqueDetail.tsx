@@ -437,7 +437,6 @@ const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDel
         addToast("Saia do modo de edição para registrar pagamentos.", "info");
         return;
     }
-    if(isCompleted) return;
 
     const participant = xitique.participants.find(p => p.id === participantId);
     if (!participant) return;
@@ -492,10 +491,18 @@ const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDel
         status: allReceived ? XitiqueStatus.COMPLETED : (hasUnequalContributions ? XitiqueStatus.RISK : XitiqueStatus.ACTIVE)
     };
     
-    await saveXitique(updatedXitique);
-    setXitique(updatedXitique);
-    
-    addToast(willReceive ? 'Pago' : 'Revertido', 'success');
+    try {
+        await saveXitique(updatedXitique);
+        setXitique(updatedXitique);
+        if (allReceived && xitique.status !== XitiqueStatus.COMPLETED) {
+            addToast('Ciclo concluído! Movido para o histórico.', 'success');
+        } else {
+            addToast(willReceive ? 'Pago' : 'Revertido', 'success');
+        }
+    } catch (error: any) {
+        console.error("Error saving xitique:", error);
+        addToast(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`, 'error');
+    }
   };
 
   // --- Exports & Utils ---
@@ -522,7 +529,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDel
   const currentBadge = getStatusBadge(xitique.status);
 
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
+    <div className="space-y-6 animate-fade-in">
       <ConfirmationModal 
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
@@ -542,6 +549,7 @@ const XitiqueDetail: React.FC<Props> = ({ xitique: initialXitique, onBack, onDel
         onCancelEdit={handleCancelGlobalEdit}
         onSaveEdit={handleSaveGlobalEdit}
         onShare={handleShare}
+        onRenew={() => onRenew && onRenew(xitique)}
         onDelete={() => {
             setConfirmModal({
                 isOpen: true,

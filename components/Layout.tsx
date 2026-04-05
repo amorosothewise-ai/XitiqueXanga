@@ -311,7 +311,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onChangeView }) =
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 md:ml-72 w-full min-h-screen pb-24 md:pb-12 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+      <main className="flex-1 md:ml-72 min-h-screen pb-24 md:pb-12 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
         <div className="p-4 md:p-8 max-w-6xl mx-auto">
           {children}
         </div>

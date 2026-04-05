@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -50,16 +51,16 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
   const currentStyle = styles[type];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" 
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity animate-fade-in" 
         onClick={onClose}
       ></div>
 
       {/* Modal */}
-      <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6 transform transition-all scale-100 border border-slate-200 dark:border-slate-800">
+      <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6 transform transition-all scale-100 border border-slate-200 dark:border-slate-800 animate-fade-in">
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
@@ -98,6 +99,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.getElementById('root')!);
 };
 
 export default ConfirmationModal;

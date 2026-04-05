@@ -73,7 +73,6 @@ const ParticipantItem: React.FC<Props> = ({
         {!isEditMode && (
             <button 
                 onClick={() => onTogglePayment(participant.id)}
-                disabled={xitique.status === 'COMPLETED'}
                 aria-label={participant.received ? t('aria.mark_unpaid') || 'Marcar como não pago' : t('aria.mark_paid') || 'Marcar como pago'}
                 className={`transition-colors p-1 rounded-md ${participant.received ? 'text-emerald-500 hover:text-emerald-600' : 'text-slate-300 hover:text-slate-500 dark:text-slate-700'}`}
             >

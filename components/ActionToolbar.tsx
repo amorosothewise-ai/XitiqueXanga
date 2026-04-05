@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Settings, Save, Share2, Trash, Loader2 } from 'lucide-react';
+import { ArrowLeft, Settings, Save, Share2, Trash, Loader2, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface Props {
@@ -12,10 +12,11 @@ interface Props {
   onSaveEdit: () => void;
   onShare: () => void;
   onDelete: () => void;
+  onRenew?: () => void;
 }
 
 const ActionToolbar: React.FC<Props> = ({
-  isEditMode, isCompleted, isSaving, onBack, onEditToggle, onCancelEdit, onSaveEdit, onShare, onDelete
+  isEditMode, isCompleted, isSaving, onBack, onEditToggle, onCancelEdit, onSaveEdit, onShare, onDelete, onRenew
 }) => {
   const { t } = useLanguage();
 
@@ -30,6 +31,16 @@ const ActionToolbar: React.FC<Props> = ({
       </button>
       
       <div className="flex gap-2 w-full md:w-auto justify-end">
+        {isCompleted && onRenew && (
+          <button 
+            onClick={onRenew}
+            className="bg-purple-600 text-white px-4 py-2 rounded-xl flex items-center text-sm font-bold shadow-md hover:bg-purple-700 transition-all"
+            aria-label={t('detail.renew') || 'Renovar Ciclo'}
+          >
+            <RefreshCw size={18} className="mr-2" /> {t('detail.renew') || 'Renovar Ciclo'}
+          </button>
+        )}
+
         {!isEditMode && !isCompleted && (
           <button 
             onClick={onEditToggle}
