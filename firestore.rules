@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    match /users/{userId} {
+      function isValidUser(data) {
+        return true; 
+      }
+      
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
+      allow update: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
+    }
+
+    match /xitiques/{xitiqueId} {
+      function isValidXitique(data) {
+        return data.user_id == request.auth.uid;
+      }
+
+      allow create: if isSignedIn() && isValidId(xitiqueId) && isValidXitique(incoming());
+      allow read: if isSignedIn() && isValidId(xitiqueId) && existing().user_id == request.auth.uid;
+      allow list: if isSignedIn() && existing().user_id == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(xitiqueId) && existing().user_id == request.auth.uid && isValidXitique(incoming());
+      allow delete: if isSignedIn() && isValidId(xitiqueId) && existing().user_id == request.auth.uid;
+    }
+
+    match /ai_analyses/{analysisId} {
+      function isValidAnalysis(data) {
+        return data.user_id == request.auth.uid;
+      }
+
+      allow create: if isSignedIn() && isValidId(analysisId) && isValidAnalysis(incoming());
+      allow read: if isSignedIn() && isValidId(analysisId) && existing().user_id == request.auth.uid;
+      allow list: if isSignedIn() && existing().user_id == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(analysisId) && existing().user_id == request.auth.uid && isValidAnalysis(incoming());
+      allow delete: if isSignedIn() && isValidId(analysisId) && existing().user_id == request.auth.uid;
+    }
+  }
+}

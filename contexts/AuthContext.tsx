@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserProfile } from '../types';
 import { login as apiLogin, loginWithGoogle as apiLoginGoogle, register as apiRegister, logout as apiLogout } from '../services/authService';
-import { supabase, isSupabaseConfigured } from '../services/supabase';
+import { auth, isFirebaseConfigured } from '../services/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -20,15 +21,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   const mapAndSetUser = (u: any) => {
-    const metadata = u.user_metadata || {};
     const profile: UserProfile = {
-      id: u.id,
-      name: metadata.full_name || metadata.name || u.email?.split('@')[0] || 'User',
+      id: u.uid,
+      name: u.displayName || u.email?.split('@')[0] || 'User',
       email: u.email || '',
-      photoUrl: metadata.avatar_url || metadata.picture,
-      language: metadata.language || 'pt',
+      photoUrl: u.photoURL,
+      language: 'pt',
       lastLogin: new Date().toISOString(),
-      notificationPreferences: metadata.preferences || {
+      notificationPreferences: {
         contributions: true,
         payouts: true,
         updates: false
@@ -39,72 +39,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(false);
   };
 
-  // Initialize Supabase Auth Listener
+  // Initialize Firebase Auth Listener
   useEffect(() => {
-    if (!isSupabaseConfigured) {
+    if (!isFirebaseConfigured) {
       setLoading(false);
       return;
     }
 
-    const checkSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        
-        if (session?.user) {
-          mapAndSetUser(session.user);
-        } else {
-          setLoading(false);
-        }
-      } catch (err: any) {
-        if (err.message?.includes('Refresh Token') || err.message?.includes('refresh token')) {
-          // Ignore and clear session gracefully
-          try {
-            await supabase.auth.signOut();
-          } catch (e) {
-            // ignore signout errors if token is already invalid
-          }
-          setUser(null);
-        } else {
-          console.error("Auth session check failed:", err);
-        }
-        setLoading(false);
-      }
-    };
-
-    checkSession();
-
-    // 2. Listen for changes (login, logout, token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: any, session: any) => {
-      if (session?.user) {
-        mapAndSetUser(session.user);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        mapAndSetUser(firebaseUser);
       } else {
         setUser(null);
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const login = async (email: string, pass: string) => {
     await apiLogin(email, pass);
-    // State update handled by onAuthStateChange
   };
 
   const loginWithGoogle = async () => {
     await apiLoginGoogle();
-    // Redirects away
   };
 
   const register = async (name: string, email: string, pass: string) => {
     await apiRegister(name, email, pass);
-    // State update handled by onAuthStateChange
   };
 
   const logout = async () => {
     await apiLogout();
-    // State update handled by onAuthStateChange
   };
 
   return (

@@ -191,7 +191,7 @@ const UserProfile: React.FC = () => {
       } catch (error: any) {
           console.error(error);
           const msg = error.message?.includes('Permission') 
-            ? 'Permission denied. Check Supabase Bucket Policies.' 
+            ? 'Permission denied. Check Firebase Storage Policies.' 
             : 'Failed to upload image';
           addToast(msg, 'error');
       } finally {

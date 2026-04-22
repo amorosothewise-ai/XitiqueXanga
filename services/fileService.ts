@@ -1,41 +1,21 @@
 
-import { supabase } from './supabase';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { app } from './firebase';
 
 export const uploadAvatar = async (userId: string, file: Blob): Promise<string> => {
-  // Use a flat filename structure to avoid potential RLS issues with folders
-  const timestamp = Date.now();
-  // Sanitize userId to ensure safe filename
-  const safeUserId = userId.replace(/[^a-zA-Z0-9-]/g, '');
-  const fileName = `${safeUserId}_${timestamp}.jpg`;
+  try {
+    const storage = getStorage(app);
+    const timestamp = Date.now();
+    const safeUserId = userId.replace(/[^a-zA-Z0-9-]/g, '');
+    const fileName = `avatars/${safeUserId}_${timestamp}.jpg`;
+    const storageRef = ref(storage, fileName);
 
-  // Upload to Supabase 'avatars' bucket
-  const { data, error } = await supabase.storage
-    .from('avatars')
-    .upload(fileName, file, {
-      cacheControl: '3600',
-      upsert: true,
-      contentType: 'image/jpeg'
-    });
+    await uploadBytes(storageRef, file, { contentType: 'image/jpeg' });
+    const downloadUrl = await getDownloadURL(storageRef);
 
-  if (error) {
-    console.error('[Upload] Supabase Error:', error);
-    // Return a user-friendly error if it's a permissions issue
-    if (error.message.includes('row-level security') || error.message.includes('polic') || error.message.includes('new row violates')) {
-        throw new Error("Permission denied. Ensure 'avatars' bucket is Public and has INSERT policies.");
-    }
+    return `${downloadUrl}?t=${timestamp}`;
+  } catch (error: any) {
+    console.error('[Upload] Firebase Error:', error);
     throw new Error(`Upload failed: ${error.message}`);
   }
-
-  // Get Public URL
-  // NOTE: This only works if the bucket is set to 'Public' in Supabase dashboard
-  const { data: publicUrlData } = supabase.storage
-    .from('avatars')
-    .getPublicUrl(fileName);
-
-  if (!publicUrlData.publicUrl) {
-      throw new Error("Could not generate public URL");
-  }
-
-  // Cache bust
-  return `${publicUrlData.publicUrl}?t=${timestamp}`;
 };

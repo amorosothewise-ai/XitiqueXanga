@@ -1,17 +1,24 @@
-import { supabase, isSupabaseConfigured } from './supabase';
+import { auth, isFirebaseConfigured } from './firebase';
+import { 
+  signInWithEmailAndPassword, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  createUserWithEmailAndPassword, 
+  signOut,
+  sendEmailVerification
+} from 'firebase/auth';
 import { UserProfile, AuthSession } from '../types';
 
-// Helper to map Supabase User to our App User Profile
+// Helper to map Firebase User to our App User Profile
 const mapUser = (u: any): UserProfile => {
-  const metadata = u.user_metadata || {};
   return {
-    id: u.id,
-    name: metadata.full_name || metadata.name || u.email?.split('@')[0] || 'User',
+    id: u.uid,
+    name: u.displayName || u.email?.split('@')[0] || 'User',
     email: u.email || '',
-    photoUrl: metadata.avatar_url || metadata.picture,
-    language: metadata.language || 'pt',
-    lastLogin: u.last_sign_in_at || new Date().toISOString(),
-    notificationPreferences: metadata.preferences || {
+    photoUrl: u.photoURL,
+    language: 'pt',
+    lastLogin: u.metadata?.lastSignInTime || new Date().toISOString(),
+    notificationPreferences: {
       contributions: true,
       payouts: true,
       updates: false
@@ -20,106 +27,65 @@ const mapUser = (u: any): UserProfile => {
 };
 
 export const login = async (email: string, password: string): Promise<AuthSession> => {
-  if (!isSupabaseConfigured) throw new Error('Backend not configured. Please check .env file.');
+  if (!isFirebaseConfigured) throw new Error('Backend not configured.');
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  if (error) throw error;
-  if (!data.user || !data.session) throw new Error('No session created');
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  const token = await userCredential.user.getIdToken();
 
   return {
-    user: mapUser(data.user),
-    token: data.session.access_token
+    user: mapUser(userCredential.user),
+    token
   };
 };
 
 export const loginWithGoogle = async (): Promise<void> => {
-  if (!isSupabaseConfigured) throw new Error('Backend not configured. Please check .env file.');
+  if (!isFirebaseConfigured) throw new Error('Backend not configured.');
 
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: window.location.origin
-    }
-  });
-  
-  if (error) throw error;
+  const provider = new GoogleAuthProvider();
+  await signInWithPopup(auth, provider);
 };
 
 export const register = async (name: string, email: string, password: string): Promise<AuthSession> => {
-  if (!isSupabaseConfigured) throw new Error('Backend not configured. Please check .env file.');
+  if (!isFirebaseConfigured) throw new Error('Backend not configured.');
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: name,
-        language: 'pt',
-      },
-      emailRedirectTo: window.location.origin
-    }
-  });
-
-  if (error) throw error;
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   
-  if (!data.user) throw new Error('Registration failed');
+  // Try to update profile with name natively (optional, but good for display)
+  // We can just rely on the fallback from email for now as we map it
+  // await updateProfile(userCredential.user, { displayName: name });
   
-  // If email confirmation is required
-  if (!data.user.email_confirmed_at) {
-     await supabase.auth.signOut();
-     throw new Error('CONFIRMATION_REQUIRED');
-  }
-  
-  if (!data.session) {
-      throw new Error('LOGIN_REQUIRED');
-  }
+  const token = await userCredential.user.getIdToken();
 
   return {
-    user: mapUser(data.user),
-    token: data.session.access_token
+    user: mapUser(userCredential.user),
+    token
   };
 };
 
 export const resendVerification = async (email: string): Promise<void> => {
-  if (!isSupabaseConfigured) throw new Error('Backend not configured.');
+  if (!isFirebaseConfigured) throw new Error('Backend not configured.');
   
-  const { error } = await supabase.auth.resend({
-    type: 'signup',
-    email,
-    options: {
-      emailRedirectTo: window.location.origin
-    }
-  });
-  if (error) throw error;
+  if (auth.currentUser) {
+    await sendEmailVerification(auth.currentUser);
+  }
 };
 
 export const logout = async (): Promise<void> => {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase.auth.signOut();
-  if (error && !error.message?.includes('Refresh Token') && !error.message?.includes('refresh token')) {
-    throw error;
-  }
+  if (!isFirebaseConfigured) return;
+  await signOut(auth);
 };
 
 // Internal helper for Context to get current session
 export const getSession = async () => {
-  if (!isSupabaseConfigured) return null;
-
-  try {
-    const { data } = await supabase.auth.getSession();
-    if (data.session?.user) {
-      return {
-         user: mapUser(data.session.user),
-         token: data.session.access_token
-      };
-    }
-    return null;
-  } catch (err) {
-    console.warn("Failed to retrieve session:", err);
-    return null;
+  if (!isFirebaseConfigured) return null;
+  
+  const user = auth.currentUser;
+  if (user) {
+    return {
+      user: mapUser(user),
+      token: await user.getIdToken()
+    };
   }
+  return null;
 };
+

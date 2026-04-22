@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@google/genai": "*",
-    "@supabase/supabase-js": "^2.39.0",
+    "firebase": "^12.12.1",
     "framer-motion": "^12.35.2",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.1",

@@ -3,7 +3,8 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Xitique, XitiqueStatus } from '../types';
 import { AI_PROMPT_PREFIX } from '../constants';
 import { formatDate } from './dateUtils';
-import { supabase } from './supabase';
+import { db } from './firebase';
+import { collection, addDoc, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 
 // --- PERSISTENCE LOGIC ---
 
@@ -25,38 +26,39 @@ export const saveAIResult = async (
   xitiqueId?: string
 ) => {
   try {
-    const { error } = await supabase
-      .from('ai_analyses')
-      .insert({
-        user_id: userId,
-        xitique_id: xitiqueId,
-        type,
-        input_data: inputData,
-        result,
-        created_at: new Date().toISOString()
-      });
-    
-    if (error) console.warn('Could not save AI result to Supabase:', error.message);
+    const aiAnalysesRef = collection(db, 'ai_analyses');
+    await addDoc(aiAnalysesRef, {
+      user_id: userId,
+      xitique_id: xitiqueId || null,
+      type,
+      input_data: inputData,
+      result,
+      created_at: new Date().toISOString()
+    });
   } catch (err) {
-    console.error('Supabase AI Save Error:', err);
+    console.error('Firebase AI Save Error:', err);
   }
 };
 
 export const getAIHistory = async (userId: string, type?: StoredAnalysis['type']): Promise<StoredAnalysis[]> => {
   try {
-    let query = supabase
-      .from('ai_analyses')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    const aiAnalysesRef = collection(db, 'ai_analyses');
+    const constraints: any[] = [
+      where('user_id', '==', userId),
+      orderBy('created_at', 'desc'),
+      limit(10)
+    ];
     
-    if (type) query = query.eq('type', type);
+    if (type) {
+      constraints.push(where('type', '==', type));
+    }
     
-    const { data, error } = await query.limit(10);
-    if (error) throw error;
-    return data || [];
+    const q = query(aiAnalysesRef, ...constraints);
+    const snapshot = await getDocs(q);
+    
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAnalysis));
   } catch (err) {
-    console.error('Supabase AI Fetch Error:', err);
+    console.error('Firebase AI Fetch Error:', err);
     return [];
   }
 };

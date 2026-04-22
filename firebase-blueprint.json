@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile extended options",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "language": { "type": "string" },
+        "preferences": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    },
+    "Xitique": {
+      "title": "Xitique",
+      "description": "A savings group or individual goal",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string", "description": "The UID of the owner" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "amount": { "type": "number" },
+        "frequency": { "type": "string" },
+        "status": { "type": "string" },
+        "start_date": { "type": "string" },
+        "participants": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "transactions": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "required": ["user_id"]
+    },
+    "AiAnalysis": {
+      "title": "AI Analysis",
+      "description": "Stored AI interaction results",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string", "description": "The UID of the user who performed the analysis" },
+        "type": { "type": "string" },
+        "input_data": { "type": "object" },
+        "result": { "type": "object" },
+        "created_at": { "type": "string" },
+        "xitique_id": { "type": "string" }
+      },
+      "required": ["user_id"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile document"
+    },
+    "/xitiques/{xitiqueId}": {
+      "schema": "Xitique",
+      "description": "Xitiques configuration and data"
+    },
+    "/ai_analyses/{analysisId}": {
+      "schema": "AiAnalysis",
+      "description": "History of AI analyses by users"
+    }
+  }
+}

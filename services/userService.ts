@@ -1,6 +1,8 @@
 
 import { UserData, UserPreferences, UserProfile, ActivityLog } from '../types';
-import { supabase } from './supabase';
+import { db, auth } from './firebase';
+import { updateProfile } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 const ACTIVITY_LOG_KEY = 'xitique_activity_logs_v1';
 
@@ -30,39 +32,59 @@ export const getActivityLogs = (): ActivityLog[] => {
 };
 
 export const updateUserProfileData = async (userId: string, data: Partial<UserData>): Promise<void> => {
-  // Update Auth Metadata (this persists across logins)
-  const updates: any = {};
-  if (data.name) updates.full_name = data.name;
-  if (data.language) updates.language = data.language;
-  if (data.photoUrl) updates.avatar_url = data.photoUrl;
+  const user = auth.currentUser;
+  if (!user || user.uid !== userId) throw new Error('User not authenticated or ID mismatch');
 
-  const { error } = await supabase.auth.updateUser({
-    data: updates
-  });
+  try {
+    const profileUpdates: { displayName?: string; photoURL?: string } = {};
+    const docUpdates: any = {};
 
-  if (error) {
-      logActivity(userId, 'UPDATE_PROFILE', 'FAILURE', error.message);
-      throw error;
+    if (data.name) {
+      profileUpdates.displayName = data.name;
+      docUpdates.name = data.name;
+    }
+    if (data.photoUrl) {
+      profileUpdates.photoURL = data.photoUrl;
+      docUpdates.photoUrl = data.photoUrl;
+    }
+    if (data.language) {
+      docUpdates.language = data.language;
+    }
+
+    if (Object.keys(profileUpdates).length > 0) {
+      await updateProfile(user, profileUpdates);
+    }
+
+    if (Object.keys(docUpdates).length > 0) {
+      const userRef = doc(db, 'users', userId);
+      await setDoc(userRef, docUpdates, { merge: true });
+    }
+
+    logActivity(userId, 'UPDATE_PROFILE', 'SUCCESS');
+  } catch (error: any) {
+    logActivity(userId, 'UPDATE_PROFILE', 'FAILURE', error.message);
+    throw error;
   }
-  logActivity(userId, 'UPDATE_PROFILE', 'SUCCESS');
 };
 
 export const updateUserPreferences = async (userId: string, prefs: Partial<UserPreferences>): Promise<void> => {
-  // Retrieve current metadata first to merge, or just overwrite the preferences object
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (user) {
-    const currentPrefs = user.user_metadata.preferences || {};
-    const newPrefs = { ...currentPrefs, ...prefs };
-    
-    const { error } = await supabase.auth.updateUser({
-      data: { preferences: newPrefs }
-    });
-    
-    if (error) {
-        logActivity(userId, 'UPDATE_PREFS', 'FAILURE', error.message);
-        throw error;
+  const user = auth.currentUser;
+  if (!user || user.uid !== userId) throw new Error('User not authenticated or ID mismatch');
+
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    let currentPrefs = {};
+    if (userDoc.exists()) {
+      currentPrefs = userDoc.data().preferences || {};
     }
+    
+    const newPrefs = { ...currentPrefs, ...prefs };
+    await setDoc(userRef, { preferences: newPrefs }, { merge: true });
+
     logActivity(userId, 'UPDATE_PREFS', 'SUCCESS');
+  } catch (error: any) {
+    logActivity(userId, 'UPDATE_PREFS', 'FAILURE', error.message);
+    throw error;
   }
 };
