@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Xitique, Frequency, XitiqueStatus } from '../types';
-import { getXitiques } from '../services/storage';
+import { getXitiques, getCachedXitiques } from '../services/storage';
 import { formatCurrency } from '../services/formatUtils';
 import { PlusCircle, ChevronRight, Wallet, Users, Loader2, Archive, Activity, ChevronLeft, LogIn, X, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,14 +31,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreate, onSelect, onShowTutoria
   const [currentPage, setCurrentPage] = useState(1);
 
   const loadData = async () => {
-    setLoadingData(true);
+    // Optimistic fast render from cache
+    const cachedData = getCachedXitiques();
+    if (cachedData.length > 0) {
+      setXitiques(cachedData);
+      setLoadingData(false);
+    } else {
+      setLoadingData(true);
+    }
+    
     setFetchError(false);
     try {
       const data = await getXitiques();
       setXitiques(data);
     } catch (error) {
       console.error("Failed to load Xitiques:", error);
-      setFetchError(true);
+      if (cachedData.length === 0) {
+          setFetchError(true);
+      }
     } finally {
       setLoadingData(false);
     }

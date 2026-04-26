@@ -3,7 +3,12 @@ import { collection, doc, getDocs, setDoc, deleteDoc, updateDoc, query, where, o
 import { Xitique, XitiqueStatus, XitiqueType, Participant, Transaction } from '../types';
 
 // --- Offline Cache Keys ---
-const CACHE_XITIQUES_KEY = 'xitique_data_cache_v1';
+export const CACHE_XITIQUES_KEY = 'xitique_data_cache_v1';
+
+export const getCachedXitiques = (): Xitique[] => {
+    const cached = localStorage.getItem(CACHE_XITIQUES_KEY);
+    return cached ? JSON.parse(cached) : [];
+};
 
 // --- User Preferences ---
 
@@ -41,8 +46,7 @@ export const getXitiques = async (): Promise<Xitique[]> => {
   try {
     const q = query(
       collection(db, 'xitiques'),
-      where('userId', '==', user.uid),
-      where('status', '!=', 'ARCHIVED')
+      where('userId', '==', user.uid)
     );
     
     // Fallback sort manually in JS in case missing indexes
@@ -51,6 +55,7 @@ export const getXitiques = async (): Promise<Xitique[]> => {
     
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
+      if (data.status === 'ARCHIVED') return;
       const xitique: Xitique = {
         id: docSnap.id,
         name: data.name,

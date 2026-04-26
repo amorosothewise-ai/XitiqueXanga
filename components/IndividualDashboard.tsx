@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Xitique, XitiqueType, Frequency, PaymentMethod, TransactionType } from '../types';
-import { getXitiques, saveXitique, createNewXitique, deleteXitique } from '../services/storage';
+import { getXitiques, getCachedXitiques, saveXitique, createNewXitique, deleteXitique } from '../services/storage';
 import { calculateBalance, createTransaction, validateTransaction } from '../services/financeLogic';
 import { formatCurrency } from '../services/formatUtils';
 import { addPeriod } from '../services/dateUtils';
@@ -104,10 +104,24 @@ const IndividualDashboard: React.FC = () => {
   }, [amount, frequency, startDate, endDate, occurrences, goalMode]);
 
   const loadSticks = async () => {
-    setLoading(true);
-    const all = await getXitiques();
-    setSticks(all.filter(x => x.type === XitiqueType.INDIVIDUAL));
-    setLoading(false);
+    // Fast render
+    const cached = getCachedXitiques().filter(x => x.type === XitiqueType.INDIVIDUAL);
+    if (cached.length > 0) {
+        setSticks(cached);
+        setLoading(false);
+    } else {
+        setLoading(true);
+    }
+    
+    // Background refresh
+    try {
+        const all = await getXitiques();
+        setSticks(all.filter(x => x.type === XitiqueType.INDIVIDUAL));
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setLoading(false);
+    }
   };
 
   const handleCreate = async () => {
