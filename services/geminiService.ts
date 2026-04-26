@@ -5,17 +5,18 @@ import { AI_PROMPT_PREFIX } from '../constants';
 import { formatDate } from './dateUtils';
 import { db } from './firebase';
 import { collection, addDoc, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from './firestoreError';
 
 // --- PERSISTENCE LOGIC ---
 
 export interface StoredAnalysis {
   id: string;
-  xitique_id?: string;
-  user_id: string;
+  xitiqueId?: string;
+  userId: string;
   type: 'FAIRNESS' | 'GOAL_PLAN';
-  input_data: any;
+  prompt: any;
   result: any;
-  created_at: string;
+  timestamp: string;
 }
 
 export const saveAIResult = async (
@@ -27,14 +28,18 @@ export const saveAIResult = async (
 ) => {
   try {
     const aiAnalysesRef = collection(db, 'ai_analyses');
-    await addDoc(aiAnalysesRef, {
-      user_id: userId,
-      xitique_id: xitiqueId || null,
-      type,
-      input_data: inputData,
-      result,
-      created_at: new Date().toISOString()
-    });
+    try {
+      await addDoc(aiAnalysesRef, {
+        userId: userId,
+        xitiqueId: xitiqueId || null,
+        type,
+        prompt: inputData,
+        result,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+       handleFirestoreError(error, OperationType.CREATE, 'ai_analyses');
+    }
   } catch (err) {
     console.error('Firebase AI Save Error:', err);
   }
@@ -44,8 +49,8 @@ export const getAIHistory = async (userId: string, type?: StoredAnalysis['type']
   try {
     const aiAnalysesRef = collection(db, 'ai_analyses');
     const constraints: any[] = [
-      where('user_id', '==', userId),
-      orderBy('created_at', 'desc'),
+      where('userId', '==', userId),
+      orderBy('timestamp', 'desc'),
       limit(10)
     ];
     
@@ -54,7 +59,13 @@ export const getAIHistory = async (userId: string, type?: StoredAnalysis['type']
     }
     
     const q = query(aiAnalysesRef, ...constraints);
-    const snapshot = await getDocs(q);
+    
+    let snapshot;
+    try {
+      snapshot = await getDocs(q);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, 'ai_analyses');
+    }
     
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StoredAnalysis));
   } catch (err) {
@@ -102,7 +113,7 @@ export const analyzeFairness = async (xitique: Xitique, userId?: string): Promis
   try {
     const ai = getGeminiClient();
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash",
       contents: prompt,
     });
     
@@ -132,14 +143,36 @@ export const generateGoalPlan = async (promptText: string, language: string, use
   const currentDate = new Date().toLocaleDateString(language === 'pt' ? 'pt-MZ' : 'en-US', { month: 'long', year: 'numeric' });
 
   const systemInstruction = language === 'pt' 
-    ? `Você é um consultor financeiro especialista em poupança e Xitique. A data atual é ${currentDate}. Se o usuário não fornecer valores exatos de despesas, faça estimativas realistas (ex: sugerir guardar 10% a 30% da renda). Calcule um plano realista para alcançar o objetivo. No campo 'idealMonth', calcule o mês e ano exatos em que a meta será atingida com base na data atual e no número de meses necessários. Retorne JSON com as chaves: goalName (string, um título curto para o objetivo), targetAmount (numero), contribution (numero), frequency (string, ex: 'mensal'), idealMonth (string, ex: 'Dezembro 2026'), explanation (string com o racional do cálculo, meses necessários e dicas).`
-    : `You are a financial advisor expert in savings and Xitique. The current date is ${currentDate}. If the user doesn't provide exact expenses, make realistic estimates (e.g. suggest saving 10% to 30% of income). Calculate a realistic plan to reach the goal. For 'idealMonth', calculate the exact month and year the goal will be reached based on the current date and required months. Return JSON with keys: goalName (string, a short title for the goal), targetAmount (number), contribution (number), frequency (string, e.g. 'monthly'), idealMonth (string, e.g. 'December 2026'), explanation (string with calculation rationale, months needed, and tips).`;
+    ? `Você é um consultor financeiro especialista em poupança e Xitique. A data atual é ${currentDate}. 
+    
+    1. EXTRACÇÃO: Analise o pedido do utilizador para extrair:
+       - Objetivo (goalName)
+       - Valor total necessário (targetAmount, em meticais)
+       - Prazo final (deadline, ex: dezembro de 2026).
+       Se o usuário não fornecer valores exatos, faça estimativas realistas para o objetivo informado.
+
+    2. CÁLCULO: Calcule uma contribuição mensal ou semanal realista para atingir o valor no prazo.
+    3. IDEAL: Converta o prazo em uma data legível (idealMonth).
+    
+    Retorne JSON com as chaves: goalName (string), targetAmount (numero), contribution (numero), frequency (string), idealMonth (string), explanation (string com o racional, meses necessários e dicas financeiras).`
+    : `You are a financial advisor expert in savings and Xitique. The current date is ${currentDate}.
+    
+    1. EXTRACTION: Analyze the user's request to extract:
+       - Goal (goalName)
+       - Target amount (targetAmount, in meticais)
+       - Deadline (deadline, e.g., December 2026).
+       If the user doesn't provide exact values, make realistic estimates for the goal described.
+
+    2. CALCULATION: Calculate a realistic monthly or weekly contribution to reach the goal within the deadline.
+    3. IDEAL: Convert the deadline into a readable date (idealMonth).
+
+    Return JSON with keys: goalName (string), targetAmount (number), contribution (number), frequency (string), idealMonth (string), explanation (string with calculation rationale, months needed, and financial tips).`;
 
   const prompt = `${systemInstruction}\n\nUser Request: ${promptText}`;
 
   const ai = getGeminiClient();
   const response = await ai.models.generateContent({
-    model: "gemini-1.5-flash",
+    model: "gemini-2.0-flash",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -199,7 +232,7 @@ export const suggestAdjustments = async (xitique: Xitique): Promise<AdjustmentSu
   try {
     const ai = getGeminiClient();
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",

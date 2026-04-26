@@ -8,40 +8,67 @@ service cloud.firestore {
     function isSignedIn() { return request.auth != null; }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
-    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function isValidId(id) { 
+        return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
 
     match /users/{userId} {
-      function isValidUser(data) {
-        return true; 
+      function isValidUser() {
+        return incoming().keys().hasAll(['id', 'email']) 
+          && incoming().id == userId
+          && incoming().email is string;
       }
       
       allow get: if isSignedIn() && request.auth.uid == userId;
-      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
-      allow update: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser();
+      allow update: if isSignedIn() && request.auth.uid == userId && isValidUser()
+                    && incoming().id == existing().id;
     }
 
     match /xitiques/{xitiqueId} {
-      function isValidXitique(data) {
-        return data.userId == request.auth.uid;
+      function isValidXitiqueCreate() {
+        let data = incoming();
+        return data.keys().hasAll(['name', 'type', 'amount', 'frequency', 'startDate', 'userId', 'status', 'createdAt'])
+            && data.userId == request.auth.uid
+            && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+            && data.type in ['GROUP', 'INDIVIDUAL']
+            && data.amount is number && data.amount >= 0
+            && data.frequency in ['DAILY', 'WEEKLY', 'MONTHLY']
+            && data.startDate is string
+            && data.status in ['PLANNING', 'ACTIVE', 'COMPLETED', 'ARCHIVED', 'RISK']
+            && data.createdAt is number;
       }
 
-      allow create: if isSignedIn() && isValidId(xitiqueId) && isValidXitique(incoming());
+      function isValidXitiqueUpdate() {
+        let diff = incoming().diff(existing());
+        let allowedFields = ['name', 'inviteCode', 'type', 'amount', 'targetAmount', 'currentBalance', 'method', 'frequency', 'startDate', 'participants', 'status', 'transactions'];
+        // Cannot change userId or createdAt
+        return incoming().userId == existing().userId
+            && incoming().createdAt == existing().createdAt
+            && diff.affectedKeys().hasOnly(allowedFields)
+            && incoming().name is string
+            && incoming().amount is number;
+      }
+
+      allow create: if isSignedIn() && isValidId(xitiqueId) && isValidXitiqueCreate();
       allow get: if isSignedIn() && isValidId(xitiqueId) && existing().userId == request.auth.uid;
       allow list: if isSignedIn() && existing().userId == request.auth.uid;
-      allow update: if isSignedIn() && isValidId(xitiqueId) && existing().userId == request.auth.uid && isValidXitique(incoming());
+      allow update: if isSignedIn() && isValidId(xitiqueId) && existing().userId == request.auth.uid && isValidXitiqueUpdate();
       allow delete: if isSignedIn() && isValidId(xitiqueId) && existing().userId == request.auth.uid;
     }
 
     match /ai_analyses/{analysisId} {
-      function isValidAnalysis(data) {
-        return data.userId == request.auth.uid;
+      function isValidAnalysisCreate() {
+        return incoming().keys().hasAll(['userId', 'type', 'prompt', 'result', 'timestamp'])
+            && incoming().userId == request.auth.uid;
       }
 
-      allow create: if isSignedIn() && isValidId(analysisId) && isValidAnalysis(incoming());
+      // No updates allowed, AI analyses are write-once or immutable logs mostly
+      allow create: if isSignedIn() && isValidId(analysisId) && isValidAnalysisCreate();
       allow get: if isSignedIn() && isValidId(analysisId) && existing().userId == request.auth.uid;
       allow list: if isSignedIn() && existing().userId == request.auth.uid;
-      allow update: if isSignedIn() && isValidId(analysisId) && existing().userId == request.auth.uid && isValidAnalysis(incoming());
       allow delete: if isSignedIn() && isValidId(analysisId) && existing().userId == request.auth.uid;
     }
   }
 }
+

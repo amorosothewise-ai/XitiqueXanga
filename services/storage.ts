@@ -1,6 +1,7 @@
 import { auth, db, isFirebaseConfigured } from './firebase';
 import { collection, doc, getDocs, setDoc, deleteDoc, updateDoc, query, where, orderBy } from 'firebase/firestore';
 import { Xitique, XitiqueStatus, XitiqueType, Participant, Transaction } from '../types';
+import { handleFirestoreError, OperationType } from './firestoreError';
 
 // --- Offline Cache Keys ---
 export const CACHE_XITIQUES_KEY = 'xitique_data_cache_v1';
@@ -50,7 +51,12 @@ export const getXitiques = async (): Promise<Xitique[]> => {
     );
     
     // Fallback sort manually in JS in case missing indexes
-    const querySnapshot = await getDocs(q);
+    let querySnapshot;
+    try {
+      querySnapshot = await getDocs(q);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, 'xitiques');
+    }
     const xitiques: Xitique[] = [];
     
     querySnapshot.forEach((docSnap) => {
@@ -119,7 +125,11 @@ export const saveXitique = async (xitique: Xitique): Promise<void> => {
   // Clean payload from undefined values
   const cleanPayload = JSON.parse(JSON.stringify(payload));
   
-  await setDoc(docRef, cleanPayload, { merge: true });
+  try {
+    await setDoc(docRef, cleanPayload, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `xitiques/${xitique.id}`);
+  }
 };
 
 export const deleteParticipant = async (id: string, xitiqueId?: string): Promise<void> => {
@@ -153,7 +163,11 @@ export const deleteXitique = async (id: string): Promise<void> => {
    }
 
   const docRef = doc(db, 'xitiques', id);
-  await updateDoc(docRef, { status: XitiqueStatus.ARCHIVED });
+  try {
+    await updateDoc(docRef, { status: XitiqueStatus.ARCHIVED });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `xitiques/${id}`);
+  }
 };
 
 export const createNewXitique = (partial: Partial<Xitique>): Xitique => {

@@ -52,11 +52,11 @@ const AIGoalPlanner: React.FC<{ onAcceptPlan?: (plan: PlanResult) => void }> = (
       };
 
       recognitionRef.current.onerror = (event: any) => {
-        console.error("Speech recognition error", event.error);
         setIsListening(false);
         if (event.error === 'not-allowed') {
           setError(language === 'pt' ? 'Permissão de microfone negada. Por favor, permita o acesso ao microfone nas configurações do seu navegador, ou digite o seu objetivo.' : 'Microphone permission denied. Please allow microphone access in your browser settings, or type your goal.');
         } else {
+          console.error("Speech recognition error", event.error);
           setError(language === 'pt' ? `Erro de reconhecimento de voz: ${event.error}` : `Speech recognition error: ${event.error}`);
         }
       };
@@ -109,7 +109,7 @@ const AIGoalPlanner: React.FC<{ onAcceptPlan?: (plan: PlanResult) => void }> = (
 
   const useHistoryItem = (item: StoredAnalysis) => {
     setPlan(item.result);
-    setPrompt(item.input_data.prompt);
+    setPrompt(item.prompt.prompt);
     setShowHistory(false);
   };
 
@@ -203,10 +203,10 @@ const AIGoalPlanner: React.FC<{ onAcceptPlan?: (plan: PlanResult) => void }> = (
               >
                 <div className="flex justify-between items-start mb-1">
                   <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-emerald-600 transition-colors">
-                    {item.input_data.prompt.substring(0, 40)}...
+                    {item.prompt.prompt.substring(0, 40)}...
                   </span>
                   <span className="text-[10px] text-slate-400">
-                    {new Date(item.created_at).toLocaleDateString()}
+                    {new Date(item.timestamp).toLocaleDateString()}
                   </span>
                 </div>
                 <div className="text-xs text-slate-500">
