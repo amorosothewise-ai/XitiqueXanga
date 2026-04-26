@@ -84,7 +84,13 @@ const AuthScreen: React.FC = () => {
         addToast('Redirecting to Google...', 'success');
     } catch (err: any) {
         console.error("Google login error:", err);
-        addToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
+        if (err.code === 'auth/unauthorized-domain') {
+            addToast(`O domínio atual (${window.location.hostname}) não está autorizado no Firebase. Adicione-o em Authentication > Settings > Authorized domains.`, 'error');
+        } else if (err.code === 'auth/popup-blocked') {
+            addToast('O pop-up de login foi bloqueado pelo navegador. Tente permitir pop-ups ou usar outro navegador.', 'error');
+        } else {
+            addToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
+        }
         setLoading(false);
     }
   };
