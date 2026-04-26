@@ -15,33 +15,33 @@ service cloud.firestore {
         return true; 
       }
       
-      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow get: if isSignedIn() && request.auth.uid == userId;
       allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
       allow update: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
     }
 
     match /xitiques/{xitiqueId} {
       function isValidXitique(data) {
-        return data.user_id == request.auth.uid;
+        return data.userId == request.auth.uid;
       }
 
       allow create: if isSignedIn() && isValidId(xitiqueId) && isValidXitique(incoming());
-      allow read: if isSignedIn() && isValidId(xitiqueId) && existing().user_id == request.auth.uid;
-      allow list: if isSignedIn() && existing().user_id == request.auth.uid;
-      allow update: if isSignedIn() && isValidId(xitiqueId) && existing().user_id == request.auth.uid && isValidXitique(incoming());
-      allow delete: if isSignedIn() && isValidId(xitiqueId) && existing().user_id == request.auth.uid;
+      allow get: if isSignedIn() && isValidId(xitiqueId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(xitiqueId) && existing().userId == request.auth.uid && isValidXitique(incoming());
+      allow delete: if isSignedIn() && isValidId(xitiqueId) && existing().userId == request.auth.uid;
     }
 
     match /ai_analyses/{analysisId} {
       function isValidAnalysis(data) {
-        return data.user_id == request.auth.uid;
+        return data.userId == request.auth.uid;
       }
 
       allow create: if isSignedIn() && isValidId(analysisId) && isValidAnalysis(incoming());
-      allow read: if isSignedIn() && isValidId(analysisId) && existing().user_id == request.auth.uid;
-      allow list: if isSignedIn() && existing().user_id == request.auth.uid;
-      allow update: if isSignedIn() && isValidId(analysisId) && existing().user_id == request.auth.uid && isValidAnalysis(incoming());
-      allow delete: if isSignedIn() && isValidId(analysisId) && existing().user_id == request.auth.uid;
+      allow get: if isSignedIn() && isValidId(analysisId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(analysisId) && existing().userId == request.auth.uid && isValidAnalysis(incoming());
+      allow delete: if isSignedIn() && isValidId(analysisId) && existing().userId == request.auth.uid;
     }
   }
 }

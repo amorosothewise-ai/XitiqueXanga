@@ -65,6 +65,14 @@ export const getAIHistory = async (userId: string, type?: StoredAnalysis['type']
 
 // --- ANALYSIS LOGIC ---
 
+const getGeminiClient = () => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is not configured');
+  }
+  return new GoogleGenAI({ apiKey });
+};
+
 export const analyzeFairness = async (xitique: Xitique, userId?: string): Promise<string> => {
   const participantList = xitique.participants.map((p, i) => 
     `${i + 1}. ${p.name} recebe em ${p.payoutDate ? formatDate(p.payoutDate) : 'TBD'} ${p.customContribution ? `(Contribuição: ${p.customContribution})` : ''}`
@@ -92,15 +100,13 @@ export const analyzeFairness = async (xitique: Xitique, userId?: string): Promis
   `;
 
   try {
-    const response = await fetch('/api/gemini', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
+    const ai = getGeminiClient();
+    const response = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: prompt,
     });
     
-    if (!response.ok) throw new Error("API Error");
-    const data = await response.json();
-    const result = data.text || "Could not generate analysis.";
+    const result = response.text || "Could not generate analysis.";
     
     if (userId && result !== "Could not generate analysis.") {
       saveAIResult(userId, 'FAIRNESS', { xitiqueName: xitique.name, participantsCount: xitique.participants.length }, result, xitique.id);
@@ -126,25 +132,36 @@ export const generateGoalPlan = async (promptText: string, language: string, use
   const currentDate = new Date().toLocaleDateString(language === 'pt' ? 'pt-MZ' : 'en-US', { month: 'long', year: 'numeric' });
 
   const systemInstruction = language === 'pt' 
-    ? `Você é um consultor financeiro especialista em poupança e Xitique. A data atual é ${currentDate}. Se o usuário não fornecer valores exatos de despesas, faça estimativas realistas (ex: sugerir guardar 10% a 30% da renda). Calcule um plano realista para alcançar o objetivo. No campo 'idealMonth', calcule o mês e ano exatos em que a meta será atingida com base na data atual e no número de meses necessários. Retorne APENAS JSON com as chaves: goalName (string, um título curto para o objetivo), targetAmount (numero), contribution (numero), frequency (string, ex: 'mensal'), idealMonth (string, ex: 'Dezembro 2026'), explanation (string com o racional do cálculo, meses necessários e dicas).`
-    : `You are a financial advisor expert in savings and Xitique. The current date is ${currentDate}. If the user doesn't provide exact expenses, make realistic estimates (e.g. suggest saving 10% to 30% of income). Calculate a realistic plan to reach the goal. For 'idealMonth', calculate the exact month and year the goal will be reached based on the current date and required months. Return ONLY JSON with keys: goalName (string, a short title for the goal), targetAmount (number), contribution (number), frequency (string, e.g. 'monthly'), idealMonth (string, e.g. 'December 2026'), explanation (string with calculation rationale, months needed, and tips).`;
+    ? `Você é um consultor financeiro especialista em poupança e Xitique. A data atual é ${currentDate}. Se o usuário não fornecer valores exatos de despesas, faça estimativas realistas (ex: sugerir guardar 10% a 30% da renda). Calcule um plano realista para alcançar o objetivo. No campo 'idealMonth', calcule o mês e ano exatos em que a meta será atingida com base na data atual e no número de meses necessários. Retorne JSON com as chaves: goalName (string, um título curto para o objetivo), targetAmount (numero), contribution (numero), frequency (string, ex: 'mensal'), idealMonth (string, ex: 'Dezembro 2026'), explanation (string com o racional do cálculo, meses necessários e dicas).`
+    : `You are a financial advisor expert in savings and Xitique. The current date is ${currentDate}. If the user doesn't provide exact expenses, make realistic estimates (e.g. suggest saving 10% to 30% of income). Calculate a realistic plan to reach the goal. For 'idealMonth', calculate the exact month and year the goal will be reached based on the current date and required months. Return JSON with keys: goalName (string, a short title for the goal), targetAmount (number), contribution (number), frequency (string, e.g. 'monthly'), idealMonth (string, e.g. 'December 2026'), explanation (string with calculation rationale, months needed, and tips).`;
 
   const prompt = `${systemInstruction}\n\nUser Request: ${promptText}`;
 
-  const response = await fetch('/api/gemini', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt })
+  const ai = getGeminiClient();
+  const response = await ai.models.generateContent({
+    model: "gemini-1.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+            goalName: { type: Type.STRING },
+            targetAmount: { type: Type.NUMBER },
+            contribution: { type: Type.NUMBER },
+            frequency: { type: Type.STRING },
+            idealMonth: { type: Type.STRING },
+            explanation: { type: Type.STRING },
+        },
+        required: ["goalName", "targetAmount", "contribution", "frequency", "idealMonth", "explanation"],
+      }
+    }
   });
 
-  if (!response.ok) throw new Error("API Error");
-  const data = await response.json();
+  const text = response.text;
+  if (!text) throw new Error("No response from AI");
   
-  if (!data.text) throw new Error("No response from AI");
-  
-  // Clean potential markdown formatting from JSON response
-  const cleanedText = data.text.replace(/```json\n?|\n?```/g, '').trim();
-  const result = JSON.parse(cleanedText) as PlanResult;
+  const result = JSON.parse(text) as PlanResult;
   
   if (userId) {
     saveAIResult(userId, 'GOAL_PLAN', { prompt: promptText }, result);
@@ -177,28 +194,34 @@ export const suggestAdjustments = async (xitique: Xitique): Promise<AdjustmentSu
     
     OBJETIVO: Sugerir ajustes nos valores de contribuição (customContribution) para que o sistema seja matematicamente equilibrado.
     No Xitique Dinâmico, o pote que cada um recebe é a soma de Min(ContribuiçãoDoPagador, ContribuiçãoDoRecebedor).
-    
-    Retorne APENAS um array JSON de objetos com este formato:
-    [{"participantId": "string", "suggestedContribution": number, "reason": "string"}]
-    
-    Não inclua explicações fora do JSON.
   `;
 
   try {
-    const response = await fetch('/api/gemini', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
+    const ai = getGeminiClient();
+    const response = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    participantId: { type: Type.STRING },
+                    suggestedContribution: { type: Type.NUMBER },
+                    reason: { type: Type.STRING }
+                },
+                required: ["participantId", "suggestedContribution", "reason"]
+            }
+        }
+      }
     });
 
-    if (!response.ok) throw new Error("API Error");
-    const data = await response.json();
-    const text = data.text;
+    const text = response.text;
     if (!text) return [];
     
-    // Clean potential markdown formatting from JSON response
-    const cleanedText = text.replace(/```json\n?|\n?```/g, '').trim();
-    return JSON.parse(cleanedText);
+    return JSON.parse(text);
   } catch (error) {
     console.error("Gemini Suggestion Error:", error);
     return [];

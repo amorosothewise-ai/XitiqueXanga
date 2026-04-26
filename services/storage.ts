@@ -116,7 +116,10 @@ export const saveXitique = async (xitique: Xitique): Promise<void> => {
     userId: user.uid
   };
   
-  await setDoc(docRef, payload, { merge: true });
+  // Clean payload from undefined values
+  const cleanPayload = JSON.parse(JSON.stringify(payload));
+  
+  await setDoc(docRef, cleanPayload, { merge: true });
 };
 
 export const deleteParticipant = async (id: string, xitiqueId?: string): Promise<void> => {

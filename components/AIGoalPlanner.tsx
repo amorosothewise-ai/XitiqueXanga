@@ -54,6 +54,11 @@ const AIGoalPlanner: React.FC<{ onAcceptPlan?: (plan: PlanResult) => void }> = (
       recognitionRef.current.onerror = (event: any) => {
         console.error("Speech recognition error", event.error);
         setIsListening(false);
+        if (event.error === 'not-allowed') {
+          setError(language === 'pt' ? 'Permissão de microfone negada. Por favor, permita o acesso ao microfone nas configurações do seu navegador, ou digite o seu objetivo.' : 'Microphone permission denied. Please allow microphone access in your browser settings, or type your goal.');
+        } else {
+          setError(language === 'pt' ? `Erro de reconhecimento de voz: ${event.error}` : `Speech recognition error: ${event.error}`);
+        }
       };
 
       recognitionRef.current.onend = () => {
