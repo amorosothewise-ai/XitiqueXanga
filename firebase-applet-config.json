@@ -1,8 +1,10 @@
 {
-  "projectId": "xitiquexanga",
-  "appId": "1:858532451977:web:86de27a69bc13dc25ab440",
-  "apiKey": "AIzaSyBcx0JksLTH7DNbl1Y-lvOG_fu3G4kLqvE",
-  "authDomain": "xitiquexanga.firebaseapp.com",
-  "storageBucket": "xitiquexanga.firebasestorage.app",
-  "messagingSenderId": "858532451977"
+  "projectId": "gen-lang-client-0341789122",
+  "appId": "1:486869412155:web:7169477da72afdec0daf1e",
+  "apiKey": "AIzaSyBG0FJ77BvKC65e6Mj8ygtJ34MYGOBApEM",
+  "authDomain": "gen-lang-client-0341789122.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-392c7335-0642-4565-92a1-a63d5c4ed3d4",
+  "storageBucket": "gen-lang-client-0341789122.firebasestorage.app",
+  "messagingSenderId": "486869412155",
+  "measurementId": "G-YPZH4H2HR8"
 }

@@ -82,8 +82,9 @@ const AuthScreen: React.FC = () => {
         await loginWithGoogle();
         // Redirect usually happens before this toast is seen, but added for completeness
         addToast('Redirecting to Google...', 'success');
-    } catch (err) {
-        addToast('Google Sign-In failed. Please check configuration.', 'error');
+    } catch (err: any) {
+        console.error("Google login error:", err);
+        addToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
         setLoading(false);
     }
   };
